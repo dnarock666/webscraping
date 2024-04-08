@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">Giochi Gratis PlayStation</string>
+    <string name="giochi_gratis_playstation">GIOCHI GRATIS PLAYSTATION</string>
+    <string name="prezzo_strix_psk">PREZZO STRIX PSK</string>
+    <string name="prezzo_strix_ollostore">PREZZO STRIX OLLOSTORE</string>
+    <string name="prezzo_strix_pixmart">PREZZO STRIX PIXMART</string>
+    <string name="prezzo_playstation">PREZZO PLAYSTATION</string>
+    <string name="data_ultimo_controllo">DATA ULTIMO CONTROLLO</string>
+    <string name="background">Background</string>
+    <string name="acquistala">Acquistala!</string>
+    <string name="ps4">ps4</string>
+    <string name="ps5">ps5</string>
+</resources>
