@@ -65,7 +65,7 @@
                 android:layout_marginTop="0dp" />
 
             <ImageButton
-                android:id="@+id/ib_ps4"
+                android:id="@+id/img_ps4"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:adjustViewBounds="true"
@@ -84,11 +84,13 @@
                 android:layout_marginTop="0dp" />
 
             <ImageButton
-                android:id="@+id/ib_ps5"
+                android:id="@+id/img_ps5"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="117dp"
+                android:adjustViewBounds="true"
                 android:backgroundTint="#000000"
                 android:contentDescription="@string/ps5"
+                android:scaleType="fitXY"
                 android:src="@mipmap/ic_ps5"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
