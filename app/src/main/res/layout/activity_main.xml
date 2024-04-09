@@ -86,7 +86,7 @@
             <ImageButton
                 android:id="@+id/img_ps5"
                 android:layout_width="match_parent"
-                android:layout_height="117dp"
+                android:layout_height="129dp"
                 android:adjustViewBounds="true"
                 android:backgroundTint="#000000"
                 android:contentDescription="@string/ps5"
@@ -101,12 +101,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="20dp"
                 android:layout_marginTop="0dp" />
-
-            <ProgressBar
-                android:id="@+id/progressBar"
-                style="@android:style/Widget.DeviceDefault.Light.ProgressBar"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
 
         </LinearLayout>
     </ScrollView>

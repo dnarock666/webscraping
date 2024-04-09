@@ -120,7 +120,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
     private Document document;
 
 
-    private static final  int CONSTRAINT_LAYOUT_ID = R.layout.activity_main;
+    private static final  int CONSTRAINT_LAYOUT_ID = R.layout.activity_ps4;
     private static final int WEB_VIEW_LOGIN_ID = R.id.wv_login;
     private static final int WEB_VIEW_FETCH_LISTA_GIOCHI_ID = R.id.wv_fetchListaGiochi;
     private static final int WEB_VIEW_CHECK_ACQUISTATO_ID = R.id.wv_checkAcquistato;
@@ -147,6 +147,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
     private static final String PLAYSTATION_4_GAMES_URL = PLAYSTATION_STORE_URL + "/it-it/category/44d8bb20-653e-431e-8ad0-c0a365f68d2f/";
 
 
+    @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

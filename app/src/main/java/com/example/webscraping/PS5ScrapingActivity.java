@@ -118,7 +118,7 @@ public class PS5ScrapingActivity extends AppCompatActivity {
     private Document document;
     private String html;
 
-    private static final  int CONSTRAINT_LAYOUT_ID = R.layout.activity_main;
+    private static final  int CONSTRAINT_LAYOUT_ID = R.layout.activity_ps5;
     private static final int WEB_VIEW_LOGIN_ID = R.id.wv_login;
     private static final int WEB_VIEW_FETCH_LISTA_GIOCHI_ID = R.id.wv_fetchListaGiochi;
     private static final int WEB_VIEW_CHECK_ACQUISTATO_ID = R.id.wv_checkAcquistato;
