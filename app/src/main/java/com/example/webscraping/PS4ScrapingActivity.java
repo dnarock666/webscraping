@@ -619,8 +619,25 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                     if (staLeggendoPrezzoFinale) {
                         checkaAcquistatoScheduledFuture = scheduledExecutorService.schedule(checkaAcquistato, INTERVALLO_TENTATIVO_CHECK_ACQUISTATO, TimeUnit.MILLISECONDS);
                     } else if (giocoInFetching != null && !giocoInFetching.IsAcquistato && countDownCheckAcquistato.getCount() > 0) {
+                        String jsCheckAcquistato =
+                                "var spans = document.querySelectorAll('\n" +
+                                "   span[data-qa=\"mfeCtaMain#offer0#finalPrice\"],\n" +
+                                "   span[data-qa=\"mfeCtaMain#offer1#finalPrice\"],\n" +
+                                "   span[data-qa=\"mfeCtaMain#offer2#finalPrice\"],\n" +
+                                "   span[data-qa=\"mfeUpsell#productEdition0#ctaWithPrice#offer0#finalPrice\"],\n" +
+                                "   span[data-qa=\"mfeUpsell#productEdition1#ctaWithPrice#offer0#finalPrice\"],\n" +
+                                "   span[data-qa=\"mfeUpsell#productEdition2#ctaWithPrice#offer0#finalPrice\"]\n" +
+                                "');\n" +
+                                "var result = false;\n" +
+                                "for (var i = 0; i < spans.length; i++) {\n" +
+                                "    if (spans[i].innerText == 'Acquistato' || spans[i].innerText == 'Nella raccolta') {\n" +
+                                "        result = true;\n" +
+                                "        break;\n" +
+                                "    }\n" +
+                                "}\n" +
+                                "return result;";
                         wv_checkAcquistato.evaluateJavascript(
-                                "document.querySelectorAll('span[data-qa=\"mfeCtaMain#offer0#finalPrice\"][innerText=\"Acquistato\"],span[data-qa=\"mfeCtaMain#offer1#finalPrice\"][innerText=\"Acquistato\"],span[data-qa=\"mfeCtaMain#offer3#finalPrice\"][innerText=\"Acquistato\"],span[data-qa=\"mfeCtaMain#offer0#finalPrice\"][innerText=\"Nella raccolta\"],span[data-qa=\"mfeCtaMain#offer1#finalPrice\"][innerText=\"Nella raccolta\"],span[data-qa=\"mfeCtaMain#offer3#finalPrice\"][innerText=\"Nella raccolta\"]')",
+                                jsCheckAcquistato,
                                 isAcquistato -> {
                                     runOnUiThread(() -> {
                                         try {
@@ -629,7 +646,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
                                             updateProgress((int) countDownCheckAcquistato.getCount() * 100 / TENTATIVI_CHECK_ACQUISTATO);
 
-                                            if (!isAcquistato.equals("null")) {
+                                            if ("true".equals(isAcquistato)) {
                                                 giocoInFetching.IsAcquistato = true;
                                                 checkaAcquistatoScheduledFuture = scheduledExecutorService.submit(checkaAcquistato);
                                             } else {

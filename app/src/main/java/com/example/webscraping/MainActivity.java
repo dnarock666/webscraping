@@ -3,6 +3,7 @@ package com.example.webscraping;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.StrictMode;
+import android.widget.ImageButton;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -11,8 +12,8 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 public class MainActivity extends AppCompatActivity {
-//    private final ImageButton ib_ps4 = findViewById(R.id.img_ps4);
-//    private final ImageButton ib_ps5 = findViewById(R.id.img_ps5);
+    private ImageButton img_ps4;
+    private ImageButton img_ps5;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -23,12 +24,14 @@ public class MainActivity extends AppCompatActivity {
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
 
-        findViewById(R.id.img_ps4).setOnClickListener(v -> {
+        img_ps4 = findViewById(R.id.img_ps4);
+        img_ps4.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, PS4ScrapingActivity.class);
             startActivity(intent);
         });
 
-        findViewById(R.id.img_ps5).setOnClickListener(v -> {
+        img_ps5 = findViewById(R.id.img_ps5);
+        img_ps5.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, PS5ScrapingActivity.class);
             startActivity(intent);
         });
