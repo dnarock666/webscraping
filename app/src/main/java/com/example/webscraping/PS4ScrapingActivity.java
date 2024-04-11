@@ -129,9 +129,9 @@ public class PS4ScrapingActivity extends AppCompatActivity {
     private static final int TENTATIVI_FETCH_LISTA_GIOCHI = 3;
     private static final int TENTATIVI_CHECK_ACQUISTATO = 3;
 
-    private static final int INTERVALLO_TENTATIVO_LOGIN = 1000 * 5;
-    private static final int INTERVALLO_TENTATIVO_FETCH_ELEMENTI = 1000 * 5;
-    private static final int INTERVALLO_TENTATIVO_CHECK_ACQUISTATO = 1000 * 5;
+    private static final int INTERVALLO_TENTATIVO_LOGIN = 1000 * 3;
+    private static final int INTERVALLO_TENTATIVO_FETCH_ELEMENTI = 1000 * 3;
+    private static final int INTERVALLO_TENTATIVO_CHECK_ACQUISTATO = 1000 * 3;
 
     //private static final String USER_AGENT = "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.43 Mobile Safari/537.36";
 
@@ -620,14 +620,9 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                         checkaAcquistatoScheduledFuture = scheduledExecutorService.schedule(checkaAcquistato, INTERVALLO_TENTATIVO_CHECK_ACQUISTATO, TimeUnit.MILLISECONDS);
                     } else if (giocoInFetching != null && !giocoInFetching.IsAcquistato && countDownCheckAcquistato.getCount() > 0) {
                         String jsCheckAcquistato =
-                                "var spans = document.querySelectorAll('\n" +
-                                "   span[data-qa=\"mfeCtaMain#offer0#finalPrice\"],\n" +
-                                "   span[data-qa=\"mfeCtaMain#offer1#finalPrice\"],\n" +
-                                "   span[data-qa=\"mfeCtaMain#offer2#finalPrice\"],\n" +
-                                "   span[data-qa=\"mfeUpsell#productEdition0#ctaWithPrice#offer0#finalPrice\"],\n" +
-                                "   span[data-qa=\"mfeUpsell#productEdition1#ctaWithPrice#offer0#finalPrice\"],\n" +
-                                "   span[data-qa=\"mfeUpsell#productEdition2#ctaWithPrice#offer0#finalPrice\"]\n" +
-                                "');\n" +
+                                "var spans = document.querySelectorAll(\n" +
+                                "   'span[data-qa=\"mfeCtaMain#offer0#finalPrice\"],span[data-qa=\"mfeCtaMain#offer1#finalPrice\"],span[data-qa=\"mfeCtaMain#offer2#finalPrice\"],span[data-qa=\"mfeUpsell#productEdition0#ctaWithPrice#offer0#finalPrice\"],span[data-qa=\"mfeUpsell#productEdition1#ctaWithPrice#offer0#finalPrice\"],span[data-qa=\"mfeUpsell#productEdition2#ctaWithPrice#offer0#finalPrice\"']\n" +
+                                ");\n" +
                                 "var result = false;\n" +
                                 "for (var i = 0; i < spans.length; i++) {\n" +
                                 "    if (spans[i].innerText == 'Acquistato' || spans[i].innerText == 'Nella raccolta') {\n" +
