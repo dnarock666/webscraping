@@ -630,7 +630,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                                 "        break;\n" +
                                 "    }\n" +
                                 "}\n" +
-                                "return result;";
+                                "result;";
                         wv_checkAcquistato.evaluateJavascript(
                                 jsCheckAcquistato,
                                 isAcquistato -> {
