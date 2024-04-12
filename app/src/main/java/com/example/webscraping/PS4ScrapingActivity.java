@@ -264,10 +264,10 @@ public class PS4ScrapingActivity extends AppCompatActivity {
         webSettings.setJavaScriptEnabled(true);
         webSettings.setDomStorageEnabled(true);
         webSettings.setAllowContentAccess(true);
-//        webSettings.setAllowFileAccess(true);
-//        webSettings.setBlockNetworkImage(false);
-//        webSettings.setSafeBrowsingEnabled(false);
-//        webSettings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        webSettings.setAllowFileAccess(true);
+        webSettings.setBlockNetworkImage(false);
+        webSettings.setSafeBrowsingEnabled(false);
+        webSettings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
         CookieManager.getInstance().setAcceptThirdPartyCookies(webView, false);
     }
 
@@ -449,8 +449,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
             try {
                 if (cntPaginaProcessata < totPagine) {
                     giocoInFetching = null;
-
-                    ResetFetchListaGiochi();
+                    evitaFetchIndesiderate = false;
 
                     wv_fetchListaGiochi.loadUrl(listaGiochiDaFetchare.get(cntGiocoProcessato).UrlPaginaRicerca);
                 } else {
@@ -512,7 +511,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
             runOnUiThread(() -> {
                 try {
                     staFetchandoListaGiochi = true;
-                    if (staLeggendoDescrizioneDaRicerca || staLeggendoPrezzoDaRicerca || staLeggendoPrezzoDaDettaglio || !evitaFetchIndesiderate) {
+                    if (staLeggendoDescrizioneDaRicerca || staLeggendoPrezzoDaRicerca || staLeggendoPrezzoDaDettaglio || evitaFetchIndesiderate) {
                         fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_TENTATIVO_FETCH_ELEMENTI, TimeUnit.MILLISECONDS);
                     } else if (!isDescrizioneLetta && countDownFetch.getCount() > 0) {
                         if (giocoInFetching == null) {
@@ -616,21 +615,24 @@ public class PS4ScrapingActivity extends AppCompatActivity {
             runOnUiThread(() -> {
                 try {
                     staCheckandoAcquistato = true;
-                    if (staLeggendoPrezzoFinale) {
+                    if (staLeggendoPrezzoFinale || evitaCheckIndesiderati) {
                         checkaAcquistatoScheduledFuture = scheduledExecutorService.schedule(checkaAcquistato, INTERVALLO_TENTATIVO_CHECK_ACQUISTATO, TimeUnit.MILLISECONDS);
                     } else if (giocoInFetching != null && !giocoInFetching.IsAcquistato && countDownCheckAcquistato.getCount() > 0) {
                         String jsCheckAcquistato =
-                                "(function() {\n" +
-                                "   var spans = document.querySelectorAll('span[data-qa=\"mfeCtaMain#offer0#finalPrice\"], span[data-qa=\"mfeCtaMain#offer1#finalPrice\"], span[data-qa=\"mfeCtaMain#offer2#finalPrice\"], span[data-qa=\"mfeUpsell#productEdition0#ctaWithPrice#offer0#finalPrice\"], span[data-qa=\"mfeUpsell#productEdition1#ctaWithPrice#offer0#finalPrice\"], span[data-qa=\"mfeUpsell#productEdition2#ctaWithPrice#offer0#finalPrice\"']);\n" +
-                                "   var result = false;\n" +
-                                "   for (var i = 0; i < spans.length; i++) {\n" +
-                                "       if (spans[i].innerText == 'Acquistato' || spans[i].innerText == 'Nella raccolta') {\n" +
-                                "           result = true;\n" +
-                                "           break;\n" +
-                                "       }\n" +
-                                "   }\n" +
-                                "   return result;\n" +
-                                "})()";
+                            "document.querySelectorAll('\n" +
+                            "   span[data-qa=\"mfeCtaMain#offer0#finalPrice\"]:contains(\"Acquistato\"),\n" +
+                            "   span[data-qa=\"mfeCtaMain#offer1#finalPrice\"]:contains(\"Acquistato\"),\n" +
+                            "   span[data-qa=\"mfeCtaMain#offer2#finalPrice\"]:contains(\"Acquistato\"),\n" +
+                            "   span[data-qa=\"mfeUpsell#productEdition0#ctaWithPrice#offer0#finalPrice\"]:contains(\"Acquistato\"),\n" +
+                            "   span[data-qa=\"mfeUpsell#productEdition1#ctaWithPrice#offer0#finalPrice\"]:contains(\"Acquistato\"),\n" +
+                            "   span[data-qa=\"mfeUpsell#productEdition2#ctaWithPrice#offer0#finalPrice\"]:contains(\"Acquistato\"),\n" +
+                            "   span[data-qa=\"mfeCtaMain#offer0#finalPrice\"]:contains(\"Nella raccolta\"),\n" +
+                            "   span[data-qa=\"mfeCtaMain#offer1#finalPrice\"]:contains(\"Nella raccolta\"),\n" +
+                            "   span[data-qa=\"mfeCtaMain#offer2#finalPrice\"]:contains(\"Nella raccolta\"),\n" +
+                            "   span[data-qa=\"mfeUpsell#productEdition0#ctaWithPrice#offer0#finalPrice\"]:contains(\"Nella raccolta\"),\n" +
+                            "   span[data-qa=\"mfeUpsell#productEdition1#ctaWithPrice#offer0#finalPrice\"]:contains(\"Nella raccolta\"),\n" +
+                            "   span[data-qa=\"mfeUpsell#productEdition2#ctaWithPrice#offer0#finalPrice\"]:contains(\"Nella raccolta\")\n" +
+                            "').length > 0";
                         wv_checkAcquistato.evaluateJavascript(
                                 jsCheckAcquistato,
                                 isAcquistato -> {
@@ -659,7 +661,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                         staLeggendoPrezzoFinale = true;
                     } else {
                         staLeggendoPrezzoDaDettaglio = false;
-                        DisegnaOggetto();
+                        if (!giocoInFetching.IsDisegnato) DisegnaOggetto();
 
                         ClearWebView(wv_checkAcquistato);
                         ResetCheckAcquistato();
@@ -823,7 +825,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                 if (Arrays.asList(new String[]{"Acquistato", "Nella raccolta"}).contains(giocoInFetching.Prezzo)) {
                     giocoInFetching.IsAcquistato = true;
 
-                    DisegnaOggetto();
+                    if (!giocoInFetching.IsDisegnato) DisegnaOggetto();
                 } else {
                     staLeggendoPrezzoDaDettaglio = true;
                     evitaCheckIndesiderati = false;
