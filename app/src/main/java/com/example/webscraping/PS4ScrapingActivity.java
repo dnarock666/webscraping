@@ -449,12 +449,11 @@ public class PS4ScrapingActivity extends AppCompatActivity {
             try {
                 if (cntPaginaProcessata < totPagine) {
                     giocoInFetching = null;
-                    evitaFetchIndesiderate = false;
+
+                    ResetFetchListaGiochi();
 
                     wv_fetchListaGiochi.loadUrl(listaGiochiDaFetchare.get(cntGiocoProcessato).UrlPaginaRicerca);
                 } else {
-                    ResetFetchListaGiochi();
-
                     hideProgressBar();
 
                     showMessage(String.format("Ricerca Completata! (Trovati %s)", listaGiochiTrovati.size()), false);
@@ -576,21 +575,21 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
                         staLeggendoPrezzoDaRicerca = true;
                     } else {
+                        evitaFetchIndesiderate = true;
+
                         if (giocoInFetching.IsGratis) {
                             listaGiochiTrovati.add(giocoInFetching);
                         }
 
                         cntGiocoProcessato++;
 
-                        staFetchandoListaGiochi = false;
-
                         showMessage(String.format("Ricerca a pagina %1$s... (Trovati %2$s)", giocoInFetching.PaginaRicerca, listaGiochiTrovati.size()), false);
 
                         updateProgress(cntGiocoProcessato * 100 / totGiochiDaControllare);
                         if (!isDescrizioneLetta || giocoInFetching.ElementoPagina == (totGiochiPerPagina - 1)) {
-                            cntPaginaProcessata++;
-
                             ClearWebView(wv_fetchListaGiochi);
+
+                            cntPaginaProcessata++;
 
                             FetchaPaginaOnline();
                         } else {
@@ -619,32 +618,35 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                         checkaAcquistatoScheduledFuture = scheduledExecutorService.schedule(checkaAcquistato, INTERVALLO_TENTATIVO_CHECK_ACQUISTATO, TimeUnit.MILLISECONDS);
                     } else if (giocoInFetching != null && !giocoInFetching.IsAcquistato && countDownCheckAcquistato.getCount() > 0) {
                         String jsCheckAcquistato =
-                            "document.querySelectorAll('\n" +
-                            "   span[data-qa=\"mfeCtaMain#offer0#finalPrice\"]:contains(\"Acquistato\"),\n" +
-                            "   span[data-qa=\"mfeCtaMain#offer1#finalPrice\"]:contains(\"Acquistato\"),\n" +
-                            "   span[data-qa=\"mfeCtaMain#offer2#finalPrice\"]:contains(\"Acquistato\"),\n" +
-                            "   span[data-qa=\"mfeUpsell#productEdition0#ctaWithPrice#offer0#finalPrice\"]:contains(\"Acquistato\"),\n" +
-                            "   span[data-qa=\"mfeUpsell#productEdition1#ctaWithPrice#offer0#finalPrice\"]:contains(\"Acquistato\"),\n" +
-                            "   span[data-qa=\"mfeUpsell#productEdition2#ctaWithPrice#offer0#finalPrice\"]:contains(\"Acquistato\"),\n" +
-                            "   span[data-qa=\"mfeCtaMain#offer0#finalPrice\"]:contains(\"Nella raccolta\"),\n" +
-                            "   span[data-qa=\"mfeCtaMain#offer1#finalPrice\"]:contains(\"Nella raccolta\"),\n" +
-                            "   span[data-qa=\"mfeCtaMain#offer2#finalPrice\"]:contains(\"Nella raccolta\"),\n" +
-                            "   span[data-qa=\"mfeUpsell#productEdition0#ctaWithPrice#offer0#finalPrice\"]:contains(\"Nella raccolta\"),\n" +
-                            "   span[data-qa=\"mfeUpsell#productEdition1#ctaWithPrice#offer0#finalPrice\"]:contains(\"Nella raccolta\"),\n" +
-                            "   span[data-qa=\"mfeUpsell#productEdition2#ctaWithPrice#offer0#finalPrice\"]:contains(\"Nella raccolta\")\n" +
-                            "').length > 0";
+                            "(function() {" +
+                            "   var spans = document.querySelectorAll('" +
+                            "       span[data-qa=\"mfeCtaMain#offer0#finalPrice\"][innerText=\"Acquistato\"]," +
+                            "       span[data-qa=\"mfeCtaMain#offer1#finalPrice\"][innerText=\"Acquistato\"]," +
+                            "       span[data-qa=\"mfeCtaMain#offer2#finalPrice\"][innerText=\"Acquistato\"]" +
+                            "       span[data-qa=\"mfeUpsell#productEdition0#ctaWithPrice#offer0#finalPrice\"][innerText=\"Acquistato\"]," +
+                            "       span[data-qa=\"mfeUpsell#productEdition1#ctaWithPrice#offer0#finalPrice\"][innerText=\"Acquistato\"]," +
+                            "       span[data-qa=\"mfeUpsell#productEdition2#ctaWithPrice#offer0#finalPrice\"][innerText=\"Acquistato\"]," +
+                            "       span[data-qa=\"mfeCtaMain#offer0#finalPrice\"][innerText=\"Acquistato\"]," +
+                            "       span[data-qa=\"mfeCtaMain#offer1#finalPrice\"][innerText=\"Acquistato\"]," +
+                            "       span[data-qa=\"mfeCtaMain#offer2#finalPrice\"][innerText=\"Acquistato\"]," +
+                            "       span[data-qa=\"mfeUpsell#productEdition0#ctaWithPrice#offer0#finalPrice\"][innerText=\"Acquistato\"]," +
+                            "       span[data-qa=\"mfeUpsell#productEdition1#ctaWithPrice#offer0#finalPrice\"][innerText=\"Acquistato\"]," +
+                            "       span[data-qa=\"mfeUpsell#productEdition2#ctaWithPrice#offer0#finalPrice\"][innerText=\"Acquistato\"]" +
+                            "   ');" +
+                            "   return spans.length;" +
+                            "})()";
                         wv_checkAcquistato.evaluateJavascript(
                                 jsCheckAcquistato,
                                 isAcquistato -> {
                                     runOnUiThread(() -> {
                                         try {
                                             staLeggendoPrezzoFinale = false;
-                                            staCheckandoAcquistato = false;
 
                                             updateProgress((int) countDownCheckAcquistato.getCount() * 100 / TENTATIVI_CHECK_ACQUISTATO);
 
-                                            if ("true".equals(isAcquistato)) {
-                                                giocoInFetching.IsAcquistato = true;
+                                            if (!isAcquistato.equals("null")) {
+                                                countDownCheckAcquistato = new CountDownLatch(0);
+                                                giocoInFetching.IsAcquistato = !"0".equals(isAcquistato);
                                                 checkaAcquistatoScheduledFuture = scheduledExecutorService.submit(checkaAcquistato);
                                             } else {
                                                 countDownCheckAcquistato.countDown();
@@ -661,12 +663,13 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                         staLeggendoPrezzoFinale = true;
                     } else {
                         staLeggendoPrezzoDaDettaglio = false;
+                        evitaCheckIndesiderati = true;
+
                         if (!giocoInFetching.IsDisegnato) DisegnaOggetto();
 
                         ClearWebView(wv_checkAcquistato);
-                        ResetCheckAcquistato();
 
-                        evitaCheckIndesiderati = true;
+                        ResetCheckAcquistato();
                     }
                 } catch (Exception e) {
                     showMessages(e.getMessage(), true);
@@ -694,7 +697,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
         staLeggendoPrezzoDaDettaglio = false;
         isDescrizioneLetta = false;
         isPrezzoLetto = false;
-        evitaFetchIndesiderate = true;
+        evitaFetchIndesiderate = false;
         if (fetchaListaGiochiScheduledFuture != null) fetchaListaGiochiScheduledFuture.cancel(true);
     }
 
@@ -702,7 +705,6 @@ public class PS4ScrapingActivity extends AppCompatActivity {
         countDownCheckAcquistato = new CountDownLatch(TENTATIVI_CHECK_ACQUISTATO);
         staCheckandoAcquistato = false;
         staLeggendoPrezzoFinale = false;
-        evitaCheckIndesiderati = true;
         if (checkaAcquistatoScheduledFuture != null) checkaAcquistatoScheduledFuture.cancel(true);
     }
 
