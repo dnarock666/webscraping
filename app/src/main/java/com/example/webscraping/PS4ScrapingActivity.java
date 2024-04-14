@@ -456,7 +456,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                 } else {
                     hideProgressBar();
 
-                    showMessage(String.format("Ricerca Completata! (Trovati %s)", listaGiochiTrovati.size()), false);
+                    showMessage(String.format("Ricerca Completata! (Trovati %1$s) - Ultimo gioco = Pag. %2$s / El. %3$s", listaGiochiTrovati.size(), cntPaginaProcessata, cntGiocoProcessato), false);
 
                     DistruggiWebView(wv_checkAcquistato);
 
@@ -619,21 +619,28 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                     } else if (giocoInFetching != null && !giocoInFetching.IsAcquistato && countDownCheckAcquistato.getCount() > 0) {
                         String jsCheckAcquistato =
                             "(function() {" +
+                            "   var isAcquistato = false;" +
                             "   var spans = document.querySelectorAll('" +
-                            "       span[data-qa=\"mfeCtaMain#offer0#finalPrice\"][innerText=\"Acquistato\"]," +
-                            "       span[data-qa=\"mfeCtaMain#offer1#finalPrice\"][innerText=\"Acquistato\"]," +
-                            "       span[data-qa=\"mfeCtaMain#offer2#finalPrice\"][innerText=\"Acquistato\"]" +
-                            "       span[data-qa=\"mfeUpsell#productEdition0#ctaWithPrice#offer0#finalPrice\"][innerText=\"Acquistato\"]," +
-                            "       span[data-qa=\"mfeUpsell#productEdition1#ctaWithPrice#offer0#finalPrice\"][innerText=\"Acquistato\"]," +
-                            "       span[data-qa=\"mfeUpsell#productEdition2#ctaWithPrice#offer0#finalPrice\"][innerText=\"Acquistato\"]," +
-                            "       span[data-qa=\"mfeCtaMain#offer0#finalPrice\"][innerText=\"Acquistato\"]," +
-                            "       span[data-qa=\"mfeCtaMain#offer1#finalPrice\"][innerText=\"Acquistato\"]," +
-                            "       span[data-qa=\"mfeCtaMain#offer2#finalPrice\"][innerText=\"Acquistato\"]," +
-                            "       span[data-qa=\"mfeUpsell#productEdition0#ctaWithPrice#offer0#finalPrice\"][innerText=\"Acquistato\"]," +
-                            "       span[data-qa=\"mfeUpsell#productEdition1#ctaWithPrice#offer0#finalPrice\"][innerText=\"Acquistato\"]," +
-                            "       span[data-qa=\"mfeUpsell#productEdition2#ctaWithPrice#offer0#finalPrice\"][innerText=\"Acquistato\"]" +
+                            "       span[data-qa=\"mfeCtaMain#offer0#finalPrice\"]," +
+                            "       span[data-qa=\"mfeCtaMain#offer1#finalPrice\"]," +
+                            "       span[data-qa=\"mfeCtaMain#offer2#finalPrice\"]" +
+                            "       span[data-qa=\"mfeUpsell#productEdition0#ctaWithPrice#offer0#finalPrice\"]," +
+                            "       span[data-qa=\"mfeUpsell#productEdition1#ctaWithPrice#offer0#finalPrice\"]," +
+                            "       span[data-qa=\"mfeUpsell#productEdition2#ctaWithPrice#offer0#finalPrice\"]," +
+                            "       span[data-qa=\"mfeCtaMain#offer0#finalPrice\"]," +
+                            "       span[data-qa=\"mfeCtaMain#offer1#finalPrice\"]," +
+                            "       span[data-qa=\"mfeCtaMain#offer2#finalPrice\"]," +
+                            "       span[data-qa=\"mfeUpsell#productEdition0#ctaWithPrice#offer0#finalPrice\"]," +
+                            "       span[data-qa=\"mfeUpsell#productEdition1#ctaWithPrice#offer0#finalPrice\"]," +
+                            "       span[data-qa=\"mfeUpsell#productEdition2#ctaWithPrice#offer0#finalPrice\"]" +
                             "   ');" +
-                            "   return spans.length;" +
+                            "   for (var cntSpan = 0; cntSpan < spans.length - 1; cntSpan++) {" +
+                            "       if (spans[cntSpan].innerText == \"Acquistato\" || spans[cntSpan].innerText == \"Nella raccolta\") {"  +
+                            "           isAcquistato = true;" +
+                            "           break;" +
+                            "       }" +
+                            "   }" +
+                            "   return isAcquistato;" +
                             "})()";
                         wv_checkAcquistato.evaluateJavascript(
                                 jsCheckAcquistato,
@@ -646,7 +653,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
                                             if (!isAcquistato.equals("null")) {
                                                 countDownCheckAcquistato = new CountDownLatch(0);
-                                                giocoInFetching.IsAcquistato = !"0".equals(isAcquistato);
+                                                giocoInFetching.IsAcquistato = isAcquistato.equals("true");
                                                 checkaAcquistatoScheduledFuture = scheduledExecutorService.submit(checkaAcquistato);
                                             } else {
                                                 countDownCheckAcquistato.countDown();
