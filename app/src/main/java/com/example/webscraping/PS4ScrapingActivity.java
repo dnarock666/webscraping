@@ -91,6 +91,8 @@ public class PS4ScrapingActivity extends AppCompatActivity {
     private Boolean staLeggendoPrezzoFinale;
     private Boolean evitaCheckIndesiderati;
 
+    private Boolean isRicercaOffline;
+
 
     private CountDownLatch countDownLogin;
     private CountDownLatch countDownFetch;
@@ -188,6 +190,8 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
         listaGiochiTrovati = new ArrayList<OggettoJson>();
 
+        isRicercaOffline = IsRicercaOffline();
+
         isLoggato = false;
 
         wv_login.loadUrl(PLAYSTATION_MAP_URL);
@@ -200,8 +204,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
             try {
                 showMessages("Caricamento database in corso...", false);
 
-                File jsonFile = new File("/data/data/com.example.webscraping/files/" + GIOCHI_OFFLINE_JSON_NAME + ".json");
-                if (jsonFile.exists()) {
+                if (isRicercaOffline) {
                     listaGiochiDaFetchare = gson.fromJson(getJson(GIOCHI_OFFLINE_JSON_NAME), new TypeToken<List<OggettoJson>>() {}.getType());
 
                     totGiochiDaControllare = listaGiochiDaFetchare.size();
@@ -306,7 +309,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
         @Override
         public void onReceivedHttpError(WebView webView, WebResourceRequest webResourceRequest, WebResourceResponse webResourceResponse) {
             super.onReceivedHttpError(webView, webResourceRequest, webResourceResponse);
-            showMessages(String.valueOf(webResourceResponse.getStatusCode()), true);
+            //showMessages(String.valueOf(webResourceResponse.getStatusCode()), true);
         }
 
         @SuppressLint("WebViewClientOnReceivedSslError")
@@ -484,12 +487,16 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                     cntGiocoProcessato++;
                     updateProgress(cntGiocoProcessato * 100 / totGiochiDaControllare);
 
-                    showMessage(String.format("Ricerca a pagina %1$s... (Trovati %2$s)", giocoInFetching.PaginaRicerca, listaGiochiTrovati.size()), false);
+                    showMessage(String.format("Check acquisto %1$s (Gioco %2$s di %3$s)", giocoInFetching.Descrizione, cntGiocoProcessato, listaGiochiDaFetchare.size()), false);
 
-                    staLeggendoPrezzoDaDettaglio = true;
-                    evitaCheckIndesiderati = false;
-
-                    wv_checkAcquistato.loadUrl(giocoInFetching.UrlGioco);
+                    if (!giocoInFetching.IsAcquistato) {
+                        staLeggendoPrezzoDaDettaglio = true;
+                        evitaCheckIndesiderati = false;
+                        wv_checkAcquistato.loadUrl(giocoInFetching.UrlGioco);
+                    }
+                    else {
+                        DisegnaOggetto();
+                    }
 
                     checkaAcquistatoScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOffline, INTERVALLO_TENTATIVO_CHECK_ACQUISTATO, TimeUnit.MILLISECONDS);
                 } else {
@@ -616,23 +623,19 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                     staCheckandoAcquistato = true;
                     if (staLeggendoPrezzoFinale || evitaCheckIndesiderati) {
                         checkaAcquistatoScheduledFuture = scheduledExecutorService.schedule(checkaAcquistato, INTERVALLO_TENTATIVO_CHECK_ACQUISTATO, TimeUnit.MILLISECONDS);
-                    } else if (giocoInFetching != null && !giocoInFetching.IsAcquistato && countDownCheckAcquistato.getCount() > 0) {
+                    } else if (giocoInFetching != null && (isRicercaOffline || !giocoInFetching.IsAcquistato) && countDownCheckAcquistato.getCount() > 0) {
                         String jsCheckAcquistato =
                             "(function() {" +
                             "   var isAcquistato = false;" +
                             "   var spans = document.querySelectorAll('" +
                             "       span[data-qa=\"mfeCtaMain#offer0#finalPrice\"]," +
                             "       span[data-qa=\"mfeCtaMain#offer1#finalPrice\"]," +
-                            "       span[data-qa=\"mfeCtaMain#offer2#finalPrice\"]" +
-                            "       span[data-qa=\"mfeUpsell#productEdition0#ctaWithPrice#offer0#finalPrice\"]," +
-                            "       span[data-qa=\"mfeUpsell#productEdition1#ctaWithPrice#offer0#finalPrice\"]," +
-                            "       span[data-qa=\"mfeUpsell#productEdition2#ctaWithPrice#offer0#finalPrice\"]," +
-                            "       span[data-qa=\"mfeCtaMain#offer0#finalPrice\"]," +
-                            "       span[data-qa=\"mfeCtaMain#offer1#finalPrice\"]," +
                             "       span[data-qa=\"mfeCtaMain#offer2#finalPrice\"]," +
                             "       span[data-qa=\"mfeUpsell#productEdition0#ctaWithPrice#offer0#finalPrice\"]," +
                             "       span[data-qa=\"mfeUpsell#productEdition1#ctaWithPrice#offer0#finalPrice\"]," +
-                            "       span[data-qa=\"mfeUpsell#productEdition2#ctaWithPrice#offer0#finalPrice\"]" +
+                            "       span[data-qa=\"mfeUpsell#productEdition2#ctaWithPrice#offer0#finalPrice\"]," +
+                            "       span[data-qa=\"mfeUpsell#productEdition3#ctaWithPrice#offer0#finalPrice\"]," +
+                            "       span[data-qa=\"mfeUpsell#productEdition4#ctaWithPrice#offer0#finalPrice\"]" +
                             "   ');" +
                             "   for (var cntSpan = 0; cntSpan < spans.length - 1; cntSpan++) {" +
                             "       if (spans[cntSpan].innerText == \"Acquistato\" || spans[cntSpan].innerText == \"Nella raccolta\") {"  +
@@ -672,7 +675,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                         staLeggendoPrezzoDaDettaglio = false;
                         evitaCheckIndesiderati = true;
 
-                        if (!giocoInFetching.IsDisegnato) DisegnaOggetto();
+                        if (isRicercaOffline || !giocoInFetching.IsDisegnato) DisegnaOggetto();
 
                         ClearWebView(wv_checkAcquistato);
 
@@ -834,7 +837,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                 if (Arrays.asList(new String[]{"Acquistato", "Nella raccolta"}).contains(giocoInFetching.Prezzo)) {
                     giocoInFetching.IsAcquistato = true;
 
-                    if (!giocoInFetching.IsDisegnato) DisegnaOggetto();
+                    if (isRicercaOffline || !giocoInFetching.IsDisegnato) DisegnaOggetto();
                 } else {
                     staLeggendoPrezzoDaDettaglio = true;
                     evitaCheckIndesiderati = false;
@@ -860,6 +863,16 @@ public class PS4ScrapingActivity extends AppCompatActivity {
         webView.clearFocus();
         webView.clearFormData();
         webView.clearCache(true);
+    }
+
+    private Boolean IsRicercaOffline() {
+        try {
+            File jsonFile = new File("/data/data/com.example.webscraping/files/" + GIOCHI_OFFLINE_JSON_NAME + ".json");
+            return jsonFile.exists();
+        } catch (Exception e) {
+            showMessages(e.getMessage(), true);
+            throw new RuntimeException(e);
+        }
     }
 
     private Integer GetTotalePagine() {
