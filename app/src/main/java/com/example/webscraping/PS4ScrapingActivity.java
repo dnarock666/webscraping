@@ -211,7 +211,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
                     showMessages("Inizio processo in corso...", false);
 
-                    fetchaListaGiochiScheduledFuture = scheduledExecutorService.submit(fetchaListaGiochiOffline);
+                    fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOffline, 0, TimeUnit.MILLISECONDS); //submit
                 } else {
                     totPagine = GetTotalePagine();
                     totGiochiPerPagina = GetTotaleElementi();
@@ -348,7 +348,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                                                         wv_login.evaluateJavascript("document.getElementById('signin-password-input-password').value = 'Tenacious.1990!_';", null);
 
                                                         countDownLogin = new CountDownLatch(0);
-                                                        logginatiScheduledFuture = scheduledExecutorService.submit(logginati);
+                                                        logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, 0, TimeUnit.MILLISECONDS); //submit
                                                     } else {
                                                         countDownLogin.countDown();
                                                         logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_TENTATIVO_LOGIN, TimeUnit.MILLISECONDS);
@@ -378,7 +378,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                                                         wv_login.evaluateJavascript("document.getElementById('signin-entrance-input-signinId').value = 'ferrari.90@hotmail.it_';", null);
 
                                                         countDownLogin = new CountDownLatch(0);
-                                                        logginatiScheduledFuture = scheduledExecutorService.submit(logginati);
+                                                        logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, 0, TimeUnit.MILLISECONDS); //submit
                                                     } else {
                                                         countDownLogin.countDown();
                                                         logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_TENTATIVO_LOGIN, TimeUnit.MILLISECONDS);
@@ -409,7 +409,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
                                                     isLoggato = true;
 
-                                                    logginatiScheduledFuture = scheduledExecutorService.submit(logginati);
+                                                    logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, 0, TimeUnit.MILLISECONDS); //submit
                                                 } else {
                                                     countDownLogin.countDown();
                                                     logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_TENTATIVO_LOGIN, TimeUnit.MILLISECONDS);
@@ -538,7 +538,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
                                                 countDownFetch = new CountDownLatch(TENTATIVI_FETCH_LISTA_GIOCHI);
 
-                                                fetchaListaGiochiScheduledFuture = scheduledExecutorService.submit(fetchaListaGiochiOnline);
+                                                fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, 0, TimeUnit.MILLISECONDS); //submit
                                             } else {
                                                 countDownFetch.countDown();
                                                 fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_TENTATIVO_FETCH_ELEMENTI, TimeUnit.MILLISECONDS);
@@ -570,7 +570,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
                                             staLeggendoPrezzoDaRicerca = false;
 
-                                            fetchaListaGiochiScheduledFuture = scheduledExecutorService.submit(fetchaListaGiochiOnline);
+                                            fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, 0, TimeUnit.MILLISECONDS); //submit
                                         }
                                         catch (Exception e) {
                                             showMessages(e.getMessage(), true);
@@ -604,7 +604,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
                             ResetFetchListaGiochi();
 
-                            fetchaListaGiochiScheduledFuture = scheduledExecutorService.submit(fetchaListaGiochiOnline);
+                            fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, 0, TimeUnit.MILLISECONDS); //submit
                         }
                     }
                 } catch (Exception e) {
@@ -657,7 +657,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                                             if (!isAcquistato.equals("null")) {
                                                 countDownCheckAcquistato = new CountDownLatch(0);
                                                 giocoInFetching.IsAcquistato = isAcquistato.equals("true");
-                                                checkaAcquistatoScheduledFuture = scheduledExecutorService.submit(checkaAcquistato);
+                                                checkaAcquistatoScheduledFuture = scheduledExecutorService.schedule(checkaAcquistato, 0, TimeUnit.MILLISECONDS); //submit
                                             } else {
                                                 countDownCheckAcquistato.countDown();
                                                 checkaAcquistatoScheduledFuture = scheduledExecutorService.schedule(checkaAcquistato, INTERVALLO_TENTATIVO_CHECK_ACQUISTATO, TimeUnit.MILLISECONDS);
