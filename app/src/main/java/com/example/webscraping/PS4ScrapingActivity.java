@@ -758,16 +758,16 @@ public class PS4ScrapingActivity extends AppCompatActivity {
         runOnUiThread(() -> {
             try {
                 TextView txtTitoloGioco = new TextView(PS4ScrapingActivity.this);
-                txtTitoloGioco.setLayoutParams(
-                        new LinearLayout.LayoutParams(
-                                ViewGroup.LayoutParams.WRAP_CONTENT,
-                                ViewGroup.LayoutParams.WRAP_CONTENT
-                        )
-                );
+                RelativeLayout.LayoutParams titoloGiocoRelativeLayoutParams =
+                        new RelativeLayout.LayoutParams(
+                                RelativeLayout.LayoutParams.WRAP_CONTENT,
+                                RelativeLayout.LayoutParams.WRAP_CONTENT
+                        );
+                titoloGiocoRelativeLayoutParams.leftMargin = 50;
+                txtTitoloGioco.setLayoutParams(titoloGiocoRelativeLayoutParams);
                 txtTitoloGioco.setGravity(Gravity.CENTER);
                 txtTitoloGioco.setTextColor(Color.rgb(255, 255, 255));
                 txtTitoloGioco.setText(String.format("%1$s (%2$s)", giocoInFetching.Descrizione, giocoInFetching.Prezzo));
-                txtTitoloGioco.setLeft(50);
                 ll_linearLayout.addView(txtTitoloGioco);
 
                 Button bottoneGioco = new Button(PS4ScrapingActivity.this);
@@ -777,7 +777,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                                 RelativeLayout.LayoutParams.WRAP_CONTENT
                         );
                 bottoneGiocoRelativeLayoutParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
-                bottoneGiocoRelativeLayoutParams.leftMargin = 420;
+                bottoneGiocoRelativeLayoutParams.leftMargin = 410;
                 bottoneGioco.setLayoutParams(bottoneGiocoRelativeLayoutParams);
                 String bottoneUrlGioco = giocoInFetching.UrlGioco;
                 bottoneGioco.setOnClickListener(v -> {
@@ -835,7 +835,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                                 RelativeLayout.LayoutParams.WRAP_CONTENT
                         );
                 txtTimeStampRelativeLayoutParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
-                txtTimeStampRelativeLayoutParams.leftMargin = 1000;
+                txtTimeStampRelativeLayoutParams.leftMargin = 1024;
                 TextView txtTimestamp = new TextView(PS4ScrapingActivity.this);
                 txtTimestamp.setLayoutParams(txtTimeStampRelativeLayoutParams);
                 txtTimestamp.setGravity(Gravity.CENTER);
