@@ -24,6 +24,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.Space;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -45,8 +46,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -134,6 +137,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
     private static final int INTERVALLO_TENTATIVO_LOGIN = 1000 * 3;
     private static final int INTERVALLO_TENTATIVO_FETCH_ELEMENTI = 1000 * 3;
     private static final int INTERVALLO_TENTATIVO_CHECK_ACQUISTATO = 1000 * 3;
+    private static final int INTERVALLO_THREAD = 10;
 
     //private static final String USER_AGENT = "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.43 Mobile Safari/537.36";
 
@@ -211,7 +215,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
                     showMessages("Inizio processo in corso...", false);
 
-                    fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOffline, 0, TimeUnit.MILLISECONDS); //submit
+                    fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOffline, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
                 } else {
                     totPagine = GetTotalePagine();
                     totGiochiPerPagina = GetTotaleElementi();
@@ -259,7 +263,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
     @SuppressLint("SetJavaScriptEnabled")
     private void SettaProprietàComuniWebView(WebView webView) {
-        ClearWebView(webView);
+        ClearWebView(webView, false);
         webView.setWebViewClient(new WebViewClientComune());
         WebSettings webSettings = webView.getSettings();
         webSettings.setCacheMode(WebSettings.LOAD_NO_CACHE);
@@ -281,11 +285,11 @@ public class PS4ScrapingActivity extends AppCompatActivity {
             try {
                 super.onPageFinished(webView, url);
                 if (webView.getId() == WEB_VIEW_LOGIN_ID && !staLoggandosi) {
-                    logginatiScheduledFuture = scheduledExecutorService.submit(logginati);
+                    logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_THREAD, TimeUnit.MILLISECONDS);
                 } else if (webView.getId() == WEB_VIEW_FETCH_LISTA_GIOCHI_ID && !staFetchandoListaGiochi && !evitaFetchIndesiderate) {
-                    fetchaListaGiochiScheduledFuture = scheduledExecutorService.submit(fetchaListaGiochiOnline);
+                    fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_THREAD, TimeUnit.MILLISECONDS);
                 } else if (webView.getId() == WEB_VIEW_CHECK_ACQUISTATO_ID && !staCheckandoAcquistato && !evitaCheckIndesiderati) {
-                    checkaAcquistatoScheduledFuture = scheduledExecutorService.submit(checkaAcquistato);
+                    checkaAcquistatoScheduledFuture = scheduledExecutorService.schedule(checkaAcquistato, INTERVALLO_THREAD, TimeUnit.MILLISECONDS);
                 }
             } catch (Exception e) {
                 showMessages(e.getMessage(), true);
@@ -348,7 +352,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                                                         wv_login.evaluateJavascript("document.getElementById('signin-password-input-password').value = 'Tenacious.1990!_';", null);
 
                                                         countDownLogin = new CountDownLatch(0);
-                                                        logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, 0, TimeUnit.MILLISECONDS); //submit
+                                                        logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
                                                     } else {
                                                         countDownLogin.countDown();
                                                         logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_TENTATIVO_LOGIN, TimeUnit.MILLISECONDS);
@@ -378,7 +382,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                                                         wv_login.evaluateJavascript("document.getElementById('signin-entrance-input-signinId').value = 'ferrari.90@hotmail.it_';", null);
 
                                                         countDownLogin = new CountDownLatch(0);
-                                                        logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, 0, TimeUnit.MILLISECONDS); //submit
+                                                        logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
                                                     } else {
                                                         countDownLogin.countDown();
                                                         logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_TENTATIVO_LOGIN, TimeUnit.MILLISECONDS);
@@ -409,7 +413,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
                                                     isLoggato = true;
 
-                                                    logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, 0, TimeUnit.MILLISECONDS); //submit
+                                                    logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
                                                 } else {
                                                     countDownLogin.countDown();
                                                     logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_TENTATIVO_LOGIN, TimeUnit.MILLISECONDS);
@@ -461,6 +465,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
                     showMessage(String.format("Ricerca Completata! (Trovati %1$s) - Ultimo gioco = Pag. %2$s / El. %3$s", listaGiochiTrovati.size(), cntPaginaProcessata, cntGiocoProcessato), false);
 
+                    ClearWebView(wv_fetchListaGiochi, false);
                     DistruggiWebView(wv_checkAcquistato);
 
                     fetchaListaGiochiScheduledFuture.cancel(true);
@@ -538,7 +543,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
                                                 countDownFetch = new CountDownLatch(TENTATIVI_FETCH_LISTA_GIOCHI);
 
-                                                fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, 0, TimeUnit.MILLISECONDS); //submit
+                                                fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
                                             } else {
                                                 countDownFetch.countDown();
                                                 fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_TENTATIVO_FETCH_ELEMENTI, TimeUnit.MILLISECONDS);
@@ -570,7 +575,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
                                             staLeggendoPrezzoDaRicerca = false;
 
-                                            fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, 0, TimeUnit.MILLISECONDS); //submit
+                                            fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
                                         }
                                         catch (Exception e) {
                                             showMessages(e.getMessage(), true);
@@ -594,7 +599,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
                         updateProgress(cntGiocoProcessato * 100 / totGiochiDaControllare);
                         if (!isDescrizioneLetta || giocoInFetching.ElementoPagina == (totGiochiPerPagina - 1)) {
-                            ClearWebView(wv_fetchListaGiochi);
+                            //ClearWebView(wv_fetchListaGiochi);
 
                             cntPaginaProcessata++;
 
@@ -604,7 +609,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
                             ResetFetchListaGiochi();
 
-                            fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, 0, TimeUnit.MILLISECONDS); //submit
+                            fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
                         }
                     }
                 } catch (Exception e) {
@@ -657,7 +662,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                                             if (!isAcquistato.equals("null")) {
                                                 countDownCheckAcquistato = new CountDownLatch(0);
                                                 giocoInFetching.IsAcquistato = isAcquistato.equals("true");
-                                                checkaAcquistatoScheduledFuture = scheduledExecutorService.schedule(checkaAcquistato, 0, TimeUnit.MILLISECONDS); //submit
+                                                checkaAcquistatoScheduledFuture = scheduledExecutorService.schedule(checkaAcquistato, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
                                             } else {
                                                 countDownCheckAcquistato.countDown();
                                                 checkaAcquistatoScheduledFuture = scheduledExecutorService.schedule(checkaAcquistato, INTERVALLO_TENTATIVO_CHECK_ACQUISTATO, TimeUnit.MILLISECONDS);
@@ -677,7 +682,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
                         if (isRicercaOffline || !giocoInFetching.IsDisegnato) DisegnaOggetto();
 
-                        ClearWebView(wv_checkAcquistato);
+                        //ClearWebView(wv_checkAcquistato);
 
                         ResetCheckAcquistato();
                     }
@@ -762,21 +767,23 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                 txtTitoloGioco.setGravity(Gravity.CENTER);
                 txtTitoloGioco.setTextColor(Color.rgb(255, 255, 255));
                 txtTitoloGioco.setText(String.format("%1$s (%2$s)", giocoInFetching.Descrizione, giocoInFetching.Prezzo));
+                txtTitoloGioco.setLeft(50);
                 ll_linearLayout.addView(txtTitoloGioco);
 
                 Button bottoneGioco = new Button(PS4ScrapingActivity.this);
-                bottoneGioco.setLayoutParams(
-                        new LinearLayout.LayoutParams(
-                                ViewGroup.LayoutParams.WRAP_CONTENT,
-                                ViewGroup.LayoutParams.WRAP_CONTENT
-                        )
-                );
+                RelativeLayout.LayoutParams bottoneGiocoRelativeLayoutParams =
+                        new RelativeLayout.LayoutParams(
+                                RelativeLayout.LayoutParams.WRAP_CONTENT,
+                                RelativeLayout.LayoutParams.WRAP_CONTENT
+                        );
+                bottoneGiocoRelativeLayoutParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
+                bottoneGiocoRelativeLayoutParams.leftMargin = 420;
+                bottoneGioco.setLayoutParams(bottoneGiocoRelativeLayoutParams);
                 String bottoneUrlGioco = giocoInFetching.UrlGioco;
-                bottoneGioco.setOnClickListener(v -> startActivity(
-                        new Intent(Intent.ACTION_VIEW).setData(
-                                Uri.parse(bottoneUrlGioco)
-                        )
-                ));
+                bottoneGioco.setOnClickListener(v -> {
+                    startActivity(new Intent(Intent.ACTION_VIEW).setData(Uri.parse(bottoneUrlGioco))
+                    );
+                });
                 if (giocoInFetching.IsAcquistato) {
                     bottoneGioco.setText(String.format("Scaricalo a pagina %s", giocoInFetching.PaginaRicerca));
                     bottoneGioco.setTextColor(Color.rgb(255, 255, 255));
@@ -786,7 +793,17 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                     bottoneGioco.setTextColor(Color.rgb(0, 0, 0));
                     bottoneGioco.setBackgroundColor(Color.rgb(69, 255, 255));
                 }
+                bottoneGioco.setPadding(30, 0, 30,0);
                 ll_linearLayout.addView(bottoneGioco);
+
+//                Space spazio1 = new Space(PS4ScrapingActivity.this);
+//                spazio1.setLayoutParams(
+//                        new LinearLayout.LayoutParams(
+//                                ViewGroup.LayoutParams.MATCH_PARENT,
+//                                30
+//                        )
+//                );
+//                ll_linearLayout.addView(spazio1);
 
                 InputStream inputStreamAnteprimaGioco = new URL(giocoInFetching.SrcAnteprima.replace("54&thumb=true", String.valueOf(256))).openStream();
                 Bitmap bitmapAnteprimaGioco = BitmapFactory.decodeStream(inputStreamAnteprimaGioco);
@@ -798,16 +815,46 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                         )
                 );
                 imageView.setImageBitmap(bitmapAnteprimaGioco);
+                imageView.setOnClickListener(v -> {
+                    startActivity(new Intent(Intent.ACTION_VIEW).setData(Uri.parse(bottoneUrlGioco)));
+                });
                 ll_linearLayout.addView(imageView);
 
-                Space spazio = new Space(PS4ScrapingActivity.this);
-                spazio.setLayoutParams(
+                Space spazio2 = new Space(PS4ScrapingActivity.this);
+                spazio2.setLayoutParams(
                         new LinearLayout.LayoutParams(
                                 ViewGroup.LayoutParams.MATCH_PARENT,
                                 30
                         )
                 );
-                ll_linearLayout.addView(spazio);
+                ll_linearLayout.addView(spazio2);
+
+                RelativeLayout.LayoutParams txtTimeStampRelativeLayoutParams =
+                        new RelativeLayout.LayoutParams(
+                                RelativeLayout.LayoutParams.WRAP_CONTENT,
+                                RelativeLayout.LayoutParams.WRAP_CONTENT
+                        );
+                txtTimeStampRelativeLayoutParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
+                txtTimeStampRelativeLayoutParams.leftMargin = 1000;
+                TextView txtTimestamp = new TextView(PS4ScrapingActivity.this);
+                txtTimestamp.setLayoutParams(txtTimeStampRelativeLayoutParams);
+                txtTimestamp.setGravity(Gravity.CENTER);
+                txtTimestamp.setTextColor(Color.rgb(255, 255, 255));
+                SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+                String formattedDate = simpleDateFormat.format(new Date());
+                txtTimestamp.setText(formattedDate);
+                txtTimestamp.setTextSize(10);
+                txtTimestamp.setTextColor(Color.YELLOW);
+                ll_linearLayout.addView(txtTimestamp);
+
+                Space spazio3 = new Space(PS4ScrapingActivity.this);
+                spazio3.setLayoutParams(
+                        new LinearLayout.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                30
+                        )
+                );
+                ll_linearLayout.addView(spazio3);
 
                 giocoInFetching.IsDisegnato = true;
             } catch (Exception e) {
@@ -853,16 +900,16 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
     private void DistruggiWebView(WebView webView) {
         ll_linearLayout.removeView(webView);
-        ClearWebView(webView);
+        ClearWebView(webView, false);
         webView.destroy();
         webView = null;
     }
 
-    private void ClearWebView(WebView webView) {
+    private void ClearWebView(WebView webView, Boolean clearCache) {
         webView.clearHistory();
         webView.clearFocus();
         webView.clearFormData();
-        webView.clearCache(true);
+        webView.clearCache(clearCache);
     }
 
     private Boolean IsRicercaOffline() {
