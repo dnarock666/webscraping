@@ -90,6 +90,7 @@ public class PS5ScrapingActivity extends AppCompatActivity {
     private Boolean staLeggendoPrezzoFinale;
     private Boolean evitaCheckIndesiderati;
 
+    private Boolean isRicercaOffline;
 
     private CountDownLatch countDownLogin;
     private CountDownLatch countDownFetch;
@@ -128,8 +129,9 @@ public class PS5ScrapingActivity extends AppCompatActivity {
     private static final int TENTATIVI_CHECK_ACQUISTATO = 3;
 
     private static final int INTERVALLO_TENTATIVO_LOGIN = 1000 * 5;
-    private static final int INTERVALLO_TENTATIVO_FETCH_GIOCHI = 1000 * 3;
+    private static final int INTERVALLO_TENTATIVO_FETCH_ELEMENTI = 1000 * 3;
     private static final int INTERVALLO_TENTATIVO_CHECK_ACQUISTATO = 1000 * 3;
+    private static final int INTERVALLO_THREAD = 10;
 
     private static final int COLORE_INFO = Color.rgb(0, 255, 255);
     private static final int COLORE_ERRORE = Color.rgb(255, 0, 0);
@@ -182,6 +184,8 @@ public class PS5ScrapingActivity extends AppCompatActivity {
 
         listaGiochiTrovati = new ArrayList<OggettoJson>();
 
+        isRicercaOffline = IsRicercaOffline();
+
         isLoggato = false;
 
         wv_login.loadUrl(PLAYSTATION_MAP_URL);
@@ -194,15 +198,14 @@ public class PS5ScrapingActivity extends AppCompatActivity {
             try {
                 showMessages("Caricamento database in corso...", false);
 
-                File jsonFile = new File("/data/data/com.webexample.webscraping/files/" + GIOCHI_OFFLINE_JSON_NAME + ".json");
-                if (jsonFile.exists()) {
+                if (isRicercaOffline) {
                     listaGiochiDaFetchare = gson.fromJson(getJson(GIOCHI_OFFLINE_JSON_NAME), new TypeToken<List<OggettoJson>>() {}.getType());
 
                     totGiochiDaControllare = listaGiochiDaFetchare.size();
 
                     showMessages("Inizio processo in corso...", false);
 
-                    fetchaListaGiochiScheduledFuture = scheduledExecutorService.submit(fetchaListaGiochiOffline);
+                    fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOffline, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
                 } else {
                     totPagine = GetTotalePagine();
                      totGiochiPerPagina = GetTotaleElementi();
@@ -250,7 +253,7 @@ public class PS5ScrapingActivity extends AppCompatActivity {
 
     @SuppressLint("SetJavaScriptEnabled")
     private void SettaProprietàComuniWebView(WebView webView) {
-        ClearWebView(webView);
+        ClearWebView(webView, false);
         webView.setWebViewClient(new WebViewClientComune());
         WebSettings webSettings = webView.getSettings();
         webSettings.setCacheMode(WebSettings.LOAD_NO_CACHE);
@@ -442,12 +445,11 @@ public class PS5ScrapingActivity extends AppCompatActivity {
 
                     wv_fetchListaGiochi.loadUrl(listaGiochiDaFetchare.get(cntGiocoProcessato).UrlPaginaRicerca);
                 } else {
-                    evitaFetchIndesiderate = true;
-
                     hideProgressBar();
 
-                    showMessage(String.format("Ricerca Completata! (Trovati %s)", listaGiochiTrovati.size()), false);
+                    showMessage(String.format("Ricerca Completata! (Trovati %1$s) - Ultimo gioco = Pag. %2$s / El. %3$s", listaGiochiTrovati.size(), cntPaginaProcessata, cntGiocoProcessato), false);
 
+                    ClearWebView(wv_fetchListaGiochi, false);
                     DistruggiWebView(wv_checkAcquistato);
 
                     fetchaListaGiochiScheduledFuture.cancel(true);
@@ -467,7 +469,7 @@ public class PS5ScrapingActivity extends AppCompatActivity {
         public void run() {
             runOnUiThread(() -> {
                 if (staLeggendoPrezzoDaDettaglio) {
-                    checkaAcquistatoScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOffline, INTERVALLO_TENTATIVO_FETCH_GIOCHI, TimeUnit.MILLISECONDS);
+                    checkaAcquistatoScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOffline, INTERVALLO_TENTATIVO_FETCH_ELEMENTI, TimeUnit.MILLISECONDS);
                 }
                 else if (cntGiocoProcessato < totGiochiDaControllare) {
                     giocoInFetching = listaGiochiDaFetchare.get(cntGiocoProcessato);
@@ -481,7 +483,7 @@ public class PS5ScrapingActivity extends AppCompatActivity {
 
                     wv_checkAcquistato.loadUrl(giocoInFetching.UrlGioco);
 
-                    checkaAcquistatoScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOffline, INTERVALLO_TENTATIVO_FETCH_GIOCHI, TimeUnit.MILLISECONDS);
+                    checkaAcquistatoScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOffline, INTERVALLO_TENTATIVO_FETCH_ELEMENTI, TimeUnit.MILLISECONDS);
                 } else {
                     txt_msg.setTextColor(Color.rgb(255, 255, 255));
                     txt_msg.setText(String.format("Ecco la lista dei giochi gratis. (Trovati %s)", cntGiocoProcessato));
@@ -501,7 +503,7 @@ public class PS5ScrapingActivity extends AppCompatActivity {
                 try {
                     staFetchandoListaGiochi = true;
                     if (staLeggendoDescrizioneDaRicerca || staLeggendoPrezzoDaRicerca || staLeggendoPrezzoDaDettaglio || evitaFetchIndesiderate) {
-                        fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_TENTATIVO_FETCH_GIOCHI, TimeUnit.MILLISECONDS);
+                        fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_TENTATIVO_FETCH_ELEMENTI, TimeUnit.MILLISECONDS);
                     } else if (!isDescrizioneLetta && countDownFetch.getCount() > 0) {
                         if (giocoInFetching == null) {
                             giocoInFetching = listaGiochiDaFetchare.get(cntGiocoProcessato);
@@ -521,10 +523,10 @@ public class PS5ScrapingActivity extends AppCompatActivity {
 
                                                 countDownFetch = new CountDownLatch(TENTATIVI_FETCH_LISTA_GIOCHI);
 
-                                                fetchaListaGiochiScheduledFuture = scheduledExecutorService.submit(fetchaListaGiochiOnline);
+                                                fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
                                             } else {
                                                 countDownFetch.countDown();
-                                                fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_TENTATIVO_FETCH_GIOCHI, TimeUnit.MILLISECONDS);
+                                                fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_TENTATIVO_FETCH_ELEMENTI, TimeUnit.MILLISECONDS);
                                             }
                                         } catch (Exception e) {
                                             showMessages(e.getMessage(), true);
@@ -548,7 +550,7 @@ public class PS5ScrapingActivity extends AppCompatActivity {
 
                         wv_checkAcquistato.loadUrl(giocoInFetching.UrlGioco);
 
-                        checkaAcquistatoScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_TENTATIVO_FETCH_GIOCHI, TimeUnit.MILLISECONDS);
+                        checkaAcquistatoScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_TENTATIVO_FETCH_ELEMENTI, TimeUnit.MILLISECONDS);
                     } else {
                         if (giocoInFetching.IsGratis) {
                             listaGiochiTrovati.add(giocoInFetching);
@@ -564,7 +566,7 @@ public class PS5ScrapingActivity extends AppCompatActivity {
                         if (!isDescrizioneLetta || giocoInFetching.ElementoPagina == (totGiochiPerPagina - 1)) {
                             cntPaginaProcessata++;
 
-                            ClearWebView(wv_fetchListaGiochi);
+                            ClearWebView(wv_fetchListaGiochi, false);
 
                             FetchaPaginaOnline();
                         } else {
@@ -627,7 +629,7 @@ public class PS5ScrapingActivity extends AppCompatActivity {
 
                         if (giocoInFetching.IsGratis) DisegnaOggetto();
 
-                        ClearWebView(wv_checkAcquistato);
+                        ClearWebView(wv_checkAcquistato, false);
                         ResetCheckPrezzo();
                     }
                 } catch (Exception e) {
@@ -792,16 +794,26 @@ public class PS5ScrapingActivity extends AppCompatActivity {
 
     private void DistruggiWebView(WebView webView) {
         ll_linearLayout.removeView(webView);
-        ClearWebView(webView);
+        ClearWebView(webView, false);
         webView.destroy();
         webView = null;
     }
 
-    private void ClearWebView(WebView webView) {
+    private void ClearWebView(WebView webView, Boolean clearCache) {
         webView.clearHistory();
         webView.clearFocus();
         webView.clearFormData();
-        webView.clearCache(true);
+        webView.clearCache(clearCache);
+    }
+
+    private Boolean IsRicercaOffline() {
+        try {
+            File jsonFile = new File("/data/data/com.example.webscraping/files/" + GIOCHI_OFFLINE_JSON_NAME + ".json");
+            return jsonFile.exists();
+        } catch (Exception e) {
+            showMessages(e.getMessage(), true);
+            throw new RuntimeException(e);
+        }
     }
 
     private Integer GetTotalePagine() {

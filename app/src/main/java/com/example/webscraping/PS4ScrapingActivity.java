@@ -163,7 +163,6 @@ public class PS4ScrapingActivity extends AppCompatActivity {
         StrictMode.setThreadPolicy(policy);
 
         scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
-        //handler = new Handler(Looper.getMainLooper());
 
         ll_linearLayout = findViewById(R.id.layout);
         pb_progressBar = findViewById(R.id.progressBar);
