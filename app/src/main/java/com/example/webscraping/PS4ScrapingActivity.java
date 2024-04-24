@@ -138,8 +138,6 @@ public class PS4ScrapingActivity extends AppCompatActivity {
     private static final int INTERVALLO_TENTATIVO_CHECK_ACQUISTATO = 1000 * 3;
     private static final int INTERVALLO_THREAD = 10;
 
-    //private static final String USER_AGENT = "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.43 Mobile Safari/537.36";
-
     private static final int COLORE_INFO = Color.rgb(0, 255, 255);
     private static final int COLORE_ERRORE = Color.rgb(255, 0, 0);
 
@@ -565,13 +563,15 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                                                 SettaProprietàComuniGioco(prezzo.replace("\"", ""));
                                             } else if (countDownFetch.getCount() > 0) {
                                                 countDownFetch.countDown();
-                                                fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_TENTATIVO_FETCH_ELEMENTI, TimeUnit.MILLISECONDS);
                                             }
                                             else {
                                                 SettaProprietàComuniGioco("?");
                                             }
 
                                             staLeggendoPrezzoDaRicerca = false;
+                                            staCheckandoAcquistato = false;
+
+                                            updateProgress((int) countDownCheckAcquistato.getCount() * 100 / TENTATIVI_CHECK_ACQUISTATO);
 
                                             fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
                                         }
@@ -889,7 +889,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
                     wv_checkAcquistato.loadUrl(giocoInFetching.UrlGioco);
 
-                    checkaAcquistatoScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_TENTATIVO_CHECK_ACQUISTATO, TimeUnit.MILLISECONDS);
+                    fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_TENTATIVO_CHECK_ACQUISTATO, TimeUnit.MILLISECONDS);
                 }
             }
         }
