@@ -63,7 +63,6 @@ import okhttp3.Response;
 
 public class PS4ScrapingActivity extends AppCompatActivity {
     private ScheduledExecutorService scheduledExecutorService;
-    //private Handler handler;
 
     private Future<?> logginatiScheduledFuture;
     private Future<?> fetchaListaGiochiScheduledFuture;
@@ -484,7 +483,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
         public void run() {
             runOnUiThread(() -> {
                 if (staLeggendoPrezzoDaDettaglio) {
-                    checkaAcquistatoScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOffline, INTERVALLO_TENTATIVO_CHECK_ACQUISTATO, TimeUnit.MILLISECONDS);
+                    fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOffline, INTERVALLO_TENTATIVO_CHECK_ACQUISTATO, TimeUnit.MILLISECONDS);
                 }
                 else if (cntGiocoProcessato < totGiochiDaControllare) {
                     giocoInFetching = listaGiochiDaFetchare.get(cntGiocoProcessato);
@@ -502,7 +501,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                         DisegnaOggetto();
                     }
 
-                    checkaAcquistatoScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOffline, INTERVALLO_TENTATIVO_CHECK_ACQUISTATO, TimeUnit.MILLISECONDS);
+                    fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOffline, INTERVALLO_TENTATIVO_CHECK_ACQUISTATO, TimeUnit.MILLISECONDS);
                 } else {
                     txt_msg.setTextColor(Color.rgb(255, 255, 255));
                     txt_msg.setText(String.format("Ecco la lista dei giochi gratis. (Trovati %s)", cntGiocoProcessato));

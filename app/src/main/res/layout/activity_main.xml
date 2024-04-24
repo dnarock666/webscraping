@@ -108,6 +108,25 @@
                 android:layout_height="20dp"
                 android:layout_marginTop="0dp" />
 
+            <ImageButton
+                android:id="@+id/img_psvr"
+                android:layout_width="match_parent"
+                android:layout_height="129dp"
+                android:adjustViewBounds="true"
+                android:backgroundTint="#000000"
+                android:contentDescription="@string/psvr"
+                android:scaleType="fitXY"
+                android:src="@mipmap/ic_psvr"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <Space
+                android:layout_width="match_parent"
+                android:layout_height="20dp"
+                android:layout_marginTop="0dp" />
+
         </LinearLayout>
     </ScrollView>
 

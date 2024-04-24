@@ -24,6 +24,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.Space;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -45,8 +46,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -63,7 +66,7 @@ public class PS5ScrapingActivity extends AppCompatActivity {
 
     private Future<?> logginatiScheduledFuture;
     private Future<?> fetchaListaGiochiScheduledFuture;
-    private Future<?> checkaAcquistatoScheduledFuture;
+    private Future<?> checkaPrezzoScheduledFuture;
 
     private LinearLayout ll_linearLayout;
     private ProgressBar pb_progressBar;
@@ -269,11 +272,11 @@ public class PS5ScrapingActivity extends AppCompatActivity {
             try {
                 super.onPageFinished(webView, url);
                 if (webView.getId() == WEB_VIEW_LOGIN_ID && !staLoggandosi) {
-                    logginatiScheduledFuture = scheduledExecutorService.submit(logginati);
+                    logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_THREAD, TimeUnit.MILLISECONDS);
                 } else if (webView.getId() == WEB_VIEW_FETCH_LISTA_GIOCHI_ID && !staFetchandoListaGiochi && !evitaFetchIndesiderate) {
-                    fetchaListaGiochiScheduledFuture = scheduledExecutorService.submit(fetchaListaGiochiOnline);
+                    fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_THREAD, TimeUnit.MILLISECONDS);
                 } else if (webView.getId() == WEB_VIEW_CHECK_ACQUISTATO_ID && !staCheckandoAcquistato && !evitaCheckIndesiderati) {
-                    checkaAcquistatoScheduledFuture = scheduledExecutorService.submit(checkaPrezzo);
+                    checkaPrezzoScheduledFuture = scheduledExecutorService.schedule(checkaPrezzo, INTERVALLO_THREAD, TimeUnit.MILLISECONDS);
                 }
             } catch (Exception e) {
                 showMessages(e.getMessage(), true);
@@ -297,7 +300,7 @@ public class PS5ScrapingActivity extends AppCompatActivity {
         @Override
         public void onReceivedHttpError(WebView webView, WebResourceRequest webResourceRequest, WebResourceResponse webResourceResponse) {
             super.onReceivedHttpError(webView, webResourceRequest, webResourceResponse);
-            showMessages(String.valueOf(webResourceResponse.getStatusCode()), true);
+            //showMessages(String.valueOf(webResourceResponse.getStatusCode()), true);
         }
 
         @SuppressLint("WebViewClientOnReceivedSslError")
@@ -336,7 +339,7 @@ public class PS5ScrapingActivity extends AppCompatActivity {
                                                         wv_login.evaluateJavascript("document.getElementById('signin-password-input-password').value = 'Tenacious.1990!_';", null);
 
                                                         countDownLogin = new CountDownLatch(0);
-                                                        logginatiScheduledFuture = scheduledExecutorService.submit(logginati);
+                                                        logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
                                                     } else {
                                                         countDownLogin.countDown();
                                                         logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_TENTATIVO_LOGIN, TimeUnit.MILLISECONDS);
@@ -366,7 +369,7 @@ public class PS5ScrapingActivity extends AppCompatActivity {
                                                         wv_login.evaluateJavascript("document.getElementById('signin-entrance-input-signinId').value = 'ferrari.90@hotmail.it_';", null);
 
                                                         countDownLogin = new CountDownLatch(0);
-                                                        logginatiScheduledFuture = scheduledExecutorService.submit(logginati);
+                                                        logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
                                                     } else {
                                                         countDownLogin.countDown();
                                                         logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_TENTATIVO_LOGIN, TimeUnit.MILLISECONDS);
@@ -397,7 +400,7 @@ public class PS5ScrapingActivity extends AppCompatActivity {
 
                                                     isLoggato = true;
 
-                                                    logginatiScheduledFuture = scheduledExecutorService.submit(logginati);
+                                                    logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
                                                 } else {
                                                     countDownLogin.countDown();
                                                     logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_TENTATIVO_LOGIN, TimeUnit.MILLISECONDS);
@@ -453,7 +456,7 @@ public class PS5ScrapingActivity extends AppCompatActivity {
                     DistruggiWebView(wv_checkAcquistato);
 
                     fetchaListaGiochiScheduledFuture.cancel(true);
-                    checkaAcquistatoScheduledFuture.cancel(true);
+                    checkaPrezzoScheduledFuture.cancel(true);
 
                     saveJson(GIOCHI_OFFLINE_JSON_NAME, listaGiochiTrovati);
                 }
@@ -469,7 +472,7 @@ public class PS5ScrapingActivity extends AppCompatActivity {
         public void run() {
             runOnUiThread(() -> {
                 if (staLeggendoPrezzoDaDettaglio) {
-                    checkaAcquistatoScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOffline, INTERVALLO_TENTATIVO_FETCH_ELEMENTI, TimeUnit.MILLISECONDS);
+                    fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOffline, INTERVALLO_TENTATIVO_FETCH_ELEMENTI, TimeUnit.MILLISECONDS);
                 }
                 else if (cntGiocoProcessato < totGiochiDaControllare) {
                     giocoInFetching = listaGiochiDaFetchare.get(cntGiocoProcessato);
@@ -483,7 +486,7 @@ public class PS5ScrapingActivity extends AppCompatActivity {
 
                     wv_checkAcquistato.loadUrl(giocoInFetching.UrlGioco);
 
-                    checkaAcquistatoScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOffline, INTERVALLO_TENTATIVO_FETCH_ELEMENTI, TimeUnit.MILLISECONDS);
+                    checkaPrezzoScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOffline, INTERVALLO_TENTATIVO_FETCH_ELEMENTI, TimeUnit.MILLISECONDS);
                 } else {
                     txt_msg.setTextColor(Color.rgb(255, 255, 255));
                     txt_msg.setText(String.format("Ecco la lista dei giochi gratis. (Trovati %s)", cntGiocoProcessato));
@@ -550,7 +553,7 @@ public class PS5ScrapingActivity extends AppCompatActivity {
 
                         wv_checkAcquistato.loadUrl(giocoInFetching.UrlGioco);
 
-                        checkaAcquistatoScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_TENTATIVO_FETCH_ELEMENTI, TimeUnit.MILLISECONDS);
+                        checkaPrezzoScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_TENTATIVO_FETCH_ELEMENTI, TimeUnit.MILLISECONDS);
                     } else {
                         if (giocoInFetching.IsGratis) {
                             listaGiochiTrovati.add(giocoInFetching);
@@ -591,8 +594,8 @@ public class PS5ScrapingActivity extends AppCompatActivity {
             runOnUiThread(() -> {
                 try {
                     staCheckandoAcquistato = true;
-                    if (staLeggendoPrezzoFinale) {
-                        checkaAcquistatoScheduledFuture = scheduledExecutorService.schedule(checkaPrezzo, INTERVALLO_TENTATIVO_CHECK_ACQUISTATO, TimeUnit.MILLISECONDS);
+                    if (staLeggendoPrezzoFinale || evitaCheckIndesiderati) {
+                        checkaPrezzoScheduledFuture = scheduledExecutorService.schedule(checkaPrezzo, INTERVALLO_TENTATIVO_CHECK_ACQUISTATO, TimeUnit.MILLISECONDS);
                     } else if (!isPrezzoLetto && countDownCheckAcquistato.getCount() > 0) {
                         wv_checkAcquistato.evaluateJavascript(
                                 "document.querySelector('span[data-qa=\"mfeCtaMain#offer0#finalPrice\"]').innerHTML",
@@ -666,7 +669,7 @@ public class PS5ScrapingActivity extends AppCompatActivity {
         countDownCheckAcquistato = new CountDownLatch(TENTATIVI_CHECK_ACQUISTATO);
         staCheckandoAcquistato = false;
         staLeggendoPrezzoFinale = false;
-        if (checkaAcquistatoScheduledFuture != null) checkaAcquistatoScheduledFuture.cancel(true);
+        if (checkaPrezzoScheduledFuture != null) checkaPrezzoScheduledFuture.cancel(true);
     }
 
 
@@ -726,30 +729,32 @@ public class PS5ScrapingActivity extends AppCompatActivity {
         runOnUiThread(() -> {
             try {
                 TextView txtTitoloGioco = new TextView(PS5ScrapingActivity.this);
-                txtTitoloGioco.setLayoutParams(
-                        new LinearLayout.LayoutParams(
-                                ViewGroup.LayoutParams.WRAP_CONTENT,
-                                ViewGroup.LayoutParams.WRAP_CONTENT
-                        )
-                );
+                RelativeLayout.LayoutParams titoloGiocoRelativeLayoutParams =
+                        new RelativeLayout.LayoutParams(
+                                RelativeLayout.LayoutParams.WRAP_CONTENT,
+                                RelativeLayout.LayoutParams.WRAP_CONTENT
+                        );
+                titoloGiocoRelativeLayoutParams.leftMargin = 50;
+                txtTitoloGioco.setLayoutParams(titoloGiocoRelativeLayoutParams);
                 txtTitoloGioco.setGravity(Gravity.CENTER);
                 txtTitoloGioco.setTextColor(Color.rgb(255, 255, 255));
                 txtTitoloGioco.setText(String.format("%1$s (%2$s)", giocoInFetching.Descrizione, giocoInFetching.Prezzo));
                 ll_linearLayout.addView(txtTitoloGioco);
 
                 Button bottoneGioco = new Button(PS5ScrapingActivity.this);
-                bottoneGioco.setLayoutParams(
-                        new LinearLayout.LayoutParams(
-                                ViewGroup.LayoutParams.WRAP_CONTENT,
-                                ViewGroup.LayoutParams.WRAP_CONTENT
-                        )
-                );
+                RelativeLayout.LayoutParams bottoneGiocoRelativeLayoutParams =
+                        new RelativeLayout.LayoutParams(
+                                RelativeLayout.LayoutParams.WRAP_CONTENT,
+                                RelativeLayout.LayoutParams.WRAP_CONTENT
+                        );
+                bottoneGiocoRelativeLayoutParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
+                bottoneGiocoRelativeLayoutParams.leftMargin = 410;
+                bottoneGioco.setLayoutParams(bottoneGiocoRelativeLayoutParams);
                 String bottoneUrlGioco = giocoInFetching.UrlGioco;
-                bottoneGioco.setOnClickListener(v -> startActivity(
-                        new Intent(Intent.ACTION_VIEW).setData(
-                                Uri.parse(bottoneUrlGioco)
-                        )
-                ));
+                bottoneGioco.setOnClickListener(v -> {
+                    startActivity(new Intent(Intent.ACTION_VIEW).setData(Uri.parse(bottoneUrlGioco))
+                    );
+                });
                 if (giocoInFetching.IsAcquistato) {
                     bottoneGioco.setText(String.format("Scaricalo a pagina %s", giocoInFetching.PaginaRicerca));
                     bottoneGioco.setTextColor(Color.rgb(255, 255, 255));
@@ -759,6 +764,7 @@ public class PS5ScrapingActivity extends AppCompatActivity {
                     bottoneGioco.setTextColor(Color.rgb(0, 0, 0));
                     bottoneGioco.setBackgroundColor(Color.rgb(69, 255, 255));
                 }
+                bottoneGioco.setPadding(30, 0, 30,0);
                 ll_linearLayout.addView(bottoneGioco);
 
                 InputStream inputStreamAnteprimaGioco = new URL(giocoInFetching.SrcAnteprima.replace("54&thumb=true", String.valueOf(256))).openStream();
@@ -771,16 +777,46 @@ public class PS5ScrapingActivity extends AppCompatActivity {
                         )
                 );
                 imageView.setImageBitmap(bitmapAnteprimaGioco);
+                imageView.setOnClickListener(v -> {
+                    startActivity(new Intent(Intent.ACTION_VIEW).setData(Uri.parse(bottoneUrlGioco)));
+                });
                 ll_linearLayout.addView(imageView);
 
-                Space spazio = new Space(PS5ScrapingActivity.this);
-                spazio.setLayoutParams(
+                Space spazio2 = new Space(PS5ScrapingActivity.this);
+                spazio2.setLayoutParams(
                         new LinearLayout.LayoutParams(
                                 ViewGroup.LayoutParams.MATCH_PARENT,
                                 30
                         )
                 );
-                ll_linearLayout.addView(spazio);
+                ll_linearLayout.addView(spazio2);
+
+                RelativeLayout.LayoutParams txtTimeStampRelativeLayoutParams =
+                        new RelativeLayout.LayoutParams(
+                                RelativeLayout.LayoutParams.WRAP_CONTENT,
+                                RelativeLayout.LayoutParams.WRAP_CONTENT
+                        );
+                txtTimeStampRelativeLayoutParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
+                txtTimeStampRelativeLayoutParams.leftMargin = 1024;
+                TextView txtTimestamp = new TextView(PS5ScrapingActivity.this);
+                txtTimestamp.setLayoutParams(txtTimeStampRelativeLayoutParams);
+                txtTimestamp.setGravity(Gravity.CENTER);
+                txtTimestamp.setTextColor(Color.rgb(255, 255, 255));
+                SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+                String formattedDate = simpleDateFormat.format(new Date());
+                txtTimestamp.setText(formattedDate);
+                txtTimestamp.setTextSize(10);
+                txtTimestamp.setTextColor(Color.YELLOW);
+                ll_linearLayout.addView(txtTimestamp);
+
+                Space spazio3 = new Space(PS5ScrapingActivity.this);
+                spazio3.setLayoutParams(
+                        new LinearLayout.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                30
+                        )
+                );
+                ll_linearLayout.addView(spazio3);
 
                 giocoInFetching.IsDisegnato = true;
             } catch (Exception e) {
