@@ -115,7 +115,7 @@
                 android:adjustViewBounds="true"
                 android:backgroundTint="#000000"
                 android:contentDescription="@string/psvr"
-                android:scaleType="fitXY"
+                android:scaleType="center"
                 android:src="@mipmap/ic_psvr"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"

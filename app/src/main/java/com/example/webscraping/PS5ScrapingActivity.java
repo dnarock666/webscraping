@@ -226,7 +226,7 @@ public class PS5ScrapingActivity extends AppCompatActivity {
 
                     showMessages("Inizio processo in corso...", false);
 
-                    FetchaPaginaOnline();
+                    SfogliaPaginaOnline();
                 }
             } catch (Exception e) {
                 showMessages(e.getMessage(), true);
@@ -256,7 +256,7 @@ public class PS5ScrapingActivity extends AppCompatActivity {
 
     @SuppressLint("SetJavaScriptEnabled")
     private void SettaProprietàComuniWebView(WebView webView) {
-        ClearWebView(webView, false);
+        //ClearWebView(webView, false);
         webView.setWebViewClient(new WebViewClientComune());
         WebSettings webSettings = webView.getSettings();
         webSettings.setCacheMode(WebSettings.LOAD_NO_CACHE);
@@ -438,7 +438,7 @@ public class PS5ScrapingActivity extends AppCompatActivity {
         }
     }
 
-    private void FetchaPaginaOnline() {
+    private void SfogliaPaginaOnline() {
         runOnUiThread(() -> {
             try {
                 if (cntPaginaProcessata < totPagine) {
@@ -569,9 +569,9 @@ public class PS5ScrapingActivity extends AppCompatActivity {
                         if (!isDescrizioneLetta || giocoInFetching.ElementoPagina == (totGiochiPerPagina - 1)) {
                             cntPaginaProcessata++;
 
-                            ClearWebView(wv_fetchListaGiochi, false);
+                            //ClearWebView(wv_fetchListaGiochi, false);
 
-                            FetchaPaginaOnline();
+                            SfogliaPaginaOnline();
                         } else {
                             giocoInFetching = null;
 
@@ -633,7 +633,7 @@ public class PS5ScrapingActivity extends AppCompatActivity {
 
                         if (giocoInFetching.IsGratis) DisegnaOggetto();
 
-                        ClearWebView(wv_checkAcquistato, false);
+                        //ClearWebView(wv_checkAcquistato, false);
                         ResetCheckPrezzo();
                     }
                 } catch (Exception e) {
