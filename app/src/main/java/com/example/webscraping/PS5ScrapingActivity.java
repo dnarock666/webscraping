@@ -516,7 +516,7 @@ public class PS5ScrapingActivity extends AppCompatActivity {
             runOnUiThread(() -> {
                 try {
                     staFetchandoListaGiochi = true;
-                    if (staLeggendoDescrizioneDaRicerca || staLeggendoPrezzoDaRicerca || staLeggendoPrezzoDaDettaglio || evitaFetchIndesiderate) {
+                    if (staLeggendoPrezzoDaRicerca || staLeggendoPrezzoDaDettaglio || evitaFetchIndesiderate) {
                         fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_TENTATIVO_FETCH_LISTA, TimeUnit.MILLISECONDS);
                     } else if (!isDescrizioneLetta && countDownFetch.getCount() > 0) {
                         if (giocoInFetching == null) {
@@ -528,14 +528,12 @@ public class PS5ScrapingActivity extends AppCompatActivity {
                                 descrizione -> {
                                     runOnUiThread(() -> {
                                         try {
-                                            staLeggendoDescrizioneDaRicerca = false;
-
                                             if (!descrizione.equals("null")) {
+                                                countDownFetch = new CountDownLatch(TENTATIVI_FETCH_LISTA_GIOCHI);
+
                                                 giocoInFetching.Descrizione = descrizione.replace("\"", "");
 
                                                 isDescrizioneLetta = true;
-
-                                                countDownFetch = new CountDownLatch(TENTATIVI_FETCH_LISTA_GIOCHI);
 
                                                 fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
                                             } else {
@@ -549,8 +547,6 @@ public class PS5ScrapingActivity extends AppCompatActivity {
                                     });
                                 }
                         );
-
-                        staLeggendoDescrizioneDaRicerca = true;
                     } else if (isDescrizioneLetta && !isPrezzoLetto) {
                         if (!document.location().equals(giocoInFetching.UrlPaginaRicerca)) {
                             SetDocument(giocoInFetching.UrlPaginaRicerca);

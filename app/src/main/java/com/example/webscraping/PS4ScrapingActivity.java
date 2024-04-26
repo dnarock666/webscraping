@@ -524,8 +524,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
         public void run() {
             runOnUiThread(() -> {
                 try {
-                    staFetchandoListaGiochi = true;
-                    if (staLeggendoDescrizioneDaRicerca || staLeggendoPrezzoDaRicerca || staLeggendoPrezzoDaDettaglio || evitaFetchIndesiderate) {
+                    if (staLeggendoPrezzoDaDettaglio || evitaFetchIndesiderate) {
                         fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_TENTATIVO_FETCH_LISTA, TimeUnit.MILLISECONDS);
                     } else if (!isDescrizioneLetta && countDownFetch.getCount() > 0) {
                         if (giocoInFetching == null) {
@@ -537,14 +536,12 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                                 descrizione -> {
                                     runOnUiThread(() -> {
                                         try {
-                                            staLeggendoDescrizioneDaRicerca = false;
-
                                             if (!descrizione.equals("null")) {
+                                                countDownFetch = new CountDownLatch(TENTATIVI_FETCH_LISTA_GIOCHI);
+
                                                 giocoInFetching.Descrizione = descrizione.replace("\"", "");
 
                                                 isDescrizioneLetta = true;
-
-                                                countDownFetch = new CountDownLatch(TENTATIVI_FETCH_LISTA_GIOCHI);
 
                                                 fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
                                             } else {
@@ -558,64 +555,54 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                                     });
                                 }
                         );
-
-                        staLeggendoDescrizioneDaRicerca = true;
                     } else if (isDescrizioneLetta && !isPrezzoLetto) {
                         wv_fetchListaGiochi.evaluateJavascript(
                                 "document.querySelector(\"" + giocoInFetching.TxtPrezzoSelector + "\").innerText",
                                 prezzo -> {
                                     runOnUiThread(() -> {
                                         try {
-                                            if (!prezzo.equals("null")) {
-                                                SettaProprietàComuniGioco(prezzo.replace("\"", ""));
-                                            } else if (countDownFetch.getCount() > 0) {
+                                            if (prezzo.equals("null") && countDownFetch.getCount() > 0) {
                                                 countDownFetch.countDown();
+                                                fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_TENTATIVO_FETCH_LISTA, TimeUnit.MILLISECONDS); //submit
+                                            } else {
+                                                updateProgress(cntGiocoProcessato * 100 / totGiochiDaControllare);
+
+                                                SettaProprietàComuniGioco(!prezzo.equals("null") ? prezzo.replace("\"", "") : "?");
+
+                                                staCheckandoAcquistato = false;
+
+                                                fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
+
+                                                evitaFetchIndesiderate = true;
+
+                                                if (giocoInFetching.IsGratis) {
+                                                    listaGiochiTrovati.add(giocoInFetching);
+                                                }
+
+                                                cntGiocoProcessato++;
+
+                                                showMessage(String.format("Ricerca a pagina %1$s... (Trovati %2$s)", giocoInFetching.PaginaRicerca, listaGiochiTrovati.size()), false);
+
+                                                if (!isDescrizioneLetta || giocoInFetching.ElementoPagina == (totGiochiPerPagina - 1)) {
+                                                    cntPaginaProcessata++;
+
+                                                    SfogliaPagineOnline();
+                                                } else {
+                                                    giocoInFetching = null;
+
+                                                    ResetFetchListaGiochi();
+
+                                                    fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
+                                                }
                                             }
-                                            else {
-                                                SettaProprietàComuniGioco("?");
-                                            }
-
-                                            staLeggendoPrezzoDaRicerca = false;
-                                            staCheckandoAcquistato = false;
-
-                                            updateProgress((int) countDownCheckAcquistato.getCount() * 100 / TENTATIVI_CHECK_ACQUISTATO);
-
-                                            fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
-                                        }
-                                        catch (Exception e) {
+                                        } catch (Exception e) {
                                             showMessages(e.getMessage(), true);
                                             throw new RuntimeException(e);
                                         }
                                     });
                                 }
+
                         );
-
-                        staLeggendoPrezzoDaRicerca = true;
-                    } else {
-                        evitaFetchIndesiderate = true;
-
-                        if (giocoInFetching.IsGratis) {
-                            listaGiochiTrovati.add(giocoInFetching);
-                        }
-
-                        cntGiocoProcessato++;
-
-                        showMessage(String.format("Ricerca a pagina %1$s... (Trovati %2$s)", giocoInFetching.PaginaRicerca, listaGiochiTrovati.size()), false);
-
-                        updateProgress(cntGiocoProcessato * 100 / totGiochiDaControllare);
-                        if (!isDescrizioneLetta || giocoInFetching.ElementoPagina == (totGiochiPerPagina - 1)) {
-                            //ClearWebView(wv_fetchListaGiochi);
-
-                            cntPaginaProcessata++;
-
-                            SfogliaPagineOnline();
-                        } else {
-                            giocoInFetching = null;
-
-                            ResetFetchListaGiochi();
-
-                            fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
-                        }
                     }
                 } catch (Exception e) {
                     showMessages(e.getMessage(), true);
@@ -934,19 +921,16 @@ public class PS4ScrapingActivity extends AppCompatActivity {
     }
 
     private void SettaProprietàComuniGioco(String prezzo) {
-        isPrezzoLetto = true;
-
         if (Arrays.asList(new String[]{"€0,00", "Inclusi", "Gratis", "Acquistato", "Nella raccolta", "Versione di prova del gioco", "?"}).contains(prezzo)) {
-            giocoInFetching.Prezzo = prezzo.replace("\"", "");
-
             if (!document.location().equals(giocoInFetching.UrlPaginaRicerca)) {
                 SetDocument(giocoInFetching.UrlPaginaRicerca);
             }
 
             giocoInFetching.UrlGioco = PLAYSTATION_STORE_URL + document.select(giocoInFetching.AnchorGiocoSelector).first().attr("href");
             giocoInFetching.SrcAnteprima = document.select(giocoInFetching.ImgAnteprimaSelector).first().attr("src");
+            giocoInFetching.Prezzo = prezzo.replace("\"", "");
 
-            if (!prezzo.equals("?")) {
+            if (!giocoInFetching.Prezzo.equals("?")) {
                 giocoInFetching.IsGratis = true;
 
                 if (Arrays.asList(new String[]{"Acquistato", "Nella raccolta"}).contains(giocoInFetching.Prezzo)) {
@@ -963,6 +947,8 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                 }
             }
         }
+
+        isPrezzoLetto = true;
     }
 
 
