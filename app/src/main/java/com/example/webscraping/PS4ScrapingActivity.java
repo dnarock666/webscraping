@@ -76,21 +76,16 @@ public class PS4ScrapingActivity extends AppCompatActivity {
     private WebView wv_checkAcquistato;
 
     private Boolean staLoggandosi;
-    private Boolean staInserendoEmail;
-    private Boolean staInserendoPassword;
-    private Boolean staControllandoLogin;
+    private Boolean isEmailInserita;
+    private Boolean isPasswordInserita;
     private Boolean isLoggato;
 
     private Boolean staFetchandoListaGiochi;
-    private Boolean staLeggendoDescrizioneDaRicerca;
-    private Boolean staLeggendoPrezzoDaRicerca;
-    private Boolean staLeggendoPrezzoDaDettaglio;
     private Boolean isDescrizioneLetta;
     private Boolean isPrezzoLetto;
     private Boolean evitaFetchIndesiderate;
 
     private Boolean staCheckandoAcquistato;
-    private Boolean staLeggendoPrezzoFinale;
     private Boolean evitaCheckIndesiderati;
 
     private Boolean isRicercaOffline;
@@ -186,13 +181,19 @@ public class PS4ScrapingActivity extends AppCompatActivity {
         ResetFetchListaGiochi();
         ResetCheckaAcquistato();
 
+        isLoggato = false;
+        isEmailInserita = false;
+        isPasswordInserita = false;
+        isDescrizioneLetta = false;
+        isPrezzoLetto = false;
+
+        isRicercaOffline = IsRicercaOffline();
+
         CaricaFinestraLogin();
         CaricaFinestraListaGiochi();
         CaricaFinestraCheckAcquisto();
 
         listaGiochiTrovati = new ArrayList<OggettoJson>();
-
-        isRicercaOffline = IsRicercaOffline();
 
         isLoggato = false;
 
@@ -333,105 +334,101 @@ public class PS4ScrapingActivity extends AppCompatActivity {
             runOnUiThread(() -> {
                 try {
                     staLoggandosi = true;
-                    if (staInserendoEmail || staInserendoPassword || staControllandoLogin) {
-                        logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_TENTATIVO_LOGIN, TimeUnit.MILLISECONDS);
-                    } else if (!isLoggato && countDownLogin.getCount() > 0) {
+
+                    if (!isLoggato && countDownLogin.getCount() > 0 && (!isEmailInserita || !isPasswordInserita)) {
                         String currentUrl = wv_login.getUrl();
 
-                        if (currentUrl.contains(PLAYSTATION_ACCOUNT_URL)) {
-                            if (currentUrl.contains("#/signin/input/password")) {
+                        if (currentUrl != null) {
+                            if (currentUrl.contains(PLAYSTATION_ACCOUNT_URL)) {
+                                if (currentUrl.contains("#/signin/input/password")) {
+                                    wv_login.evaluateJavascript(
+                                            "document.getElementById('signin-password-input-password').value",
+                                            password -> {
+                                                runOnUiThread(() -> {
+                                                    try {
+                                                        updateProgress((int) countDownLogin.getCount() * 100 / TENTATIVI_LOGIN);
+
+                                                        if (password.equals("null")) {
+                                                            countDownLogin.countDown();
+                                                            logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_TENTATIVO_LOGIN, TimeUnit.MILLISECONDS);
+                                                        } else {
+                                                            isPasswordInserita = true;
+
+                                                            wv_login.evaluateJavascript("document.getElementById('signin-password-input-password').focus();", null);
+                                                            wv_login.evaluateJavascript("document.getElementById('signin-password-input-password').value = 'Tenacious.1990!_';", null);
+
+                                                            countDownLogin = new CountDownLatch(0);
+
+                                                            logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
+                                                        }
+                                                    } catch (Exception e) {
+                                                        showMessages(e.getMessage(), true);
+                                                        throw new RuntimeException(e);
+                                                    }
+                                                });
+                                            }
+                                    );
+                                } else if (currentUrl.contains("sonyacct/signin") || currentUrl.contains("#/signin/input/id")) {
+                                    wv_login.evaluateJavascript(
+                                            "document.getElementById('signin-entrance-input-signinId').value",
+                                            email -> {
+                                                runOnUiThread(() -> {
+                                                    try {
+                                                        updateProgress((int) countDownLogin.getCount() * 100 / TENTATIVI_LOGIN);
+
+                                                        if (email.equals("null")) {
+                                                            countDownLogin.countDown();
+                                                            logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_TENTATIVO_LOGIN, TimeUnit.MILLISECONDS);
+                                                        } else {
+                                                            isEmailInserita = true;
+
+                                                            wv_login.evaluateJavascript("document.getElementById('signin-entrance-input-signinId').focus();", null);
+                                                            wv_login.evaluateJavascript("document.getElementById('signin-entrance-input-signinId').value = 'ferrari.90@hotmail.it_';", null);
+
+                                                            countDownLogin = new CountDownLatch(0);
+
+                                                            logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
+                                                        }
+                                                    } catch (Exception e) {
+                                                        showMessages(e.getMessage(), true);
+                                                        throw new RuntimeException(e);
+                                                    }
+                                                });
+                                            }
+                                    );
+                                }
+                            } else {
                                 wv_login.evaluateJavascript(
-                                        "document.getElementById('signin-password-input-password').value",
-                                        password -> {
+                                        "document.querySelector('[data-qa=\"web-toolbar#profile-container\"]');",
+                                        divLoggato -> {
                                             runOnUiThread(() -> {
                                                 try {
-                                                    staInserendoPassword = false;
-                                                    staLoggandosi = false;
-
                                                     updateProgress((int) countDownLogin.getCount() * 100 / TENTATIVI_LOGIN);
 
-                                                    if (!password.equals("null")) {
-                                                        wv_login.evaluateJavascript("document.getElementById('signin-password-input-password').focus();", null);
-                                                        wv_login.evaluateJavascript("document.getElementById('signin-password-input-password').value = 'Tenacious.1990!_';", null);
-
-                                                        countDownLogin = new CountDownLatch(0);
-                                                        logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
+                                                    if (divLoggato.equals("null")) {
+                                                        ResetLogin();
                                                     } else {
-                                                        countDownLogin.countDown();
-                                                        logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_TENTATIVO_LOGIN, TimeUnit.MILLISECONDS);
+                                                        isLoggato = true;
                                                     }
-                                                } catch (Exception e) {
-                                                    showMessages(e.getMessage(), true);
-                                                    throw new RuntimeException(e);
-                                                }
-                                            });
-                                        }
-                                );
 
-                                staInserendoPassword = true;
-                            } else if (currentUrl.contains("sonyacct/signin") || currentUrl.contains("#/signin/input/id")) {
-                                wv_login.evaluateJavascript(
-                                        "document.getElementById('signin-entrance-input-signinId').value",
-                                        email -> {
-                                            runOnUiThread(() -> {
-                                                try {
-                                                    staInserendoEmail = false;
-                                                    staLoggandosi = false;
-
-                                                    updateProgress((int) countDownLogin.getCount() * 100 / TENTATIVI_LOGIN);
-
-                                                    if (!email.equals("null")) {
-                                                        wv_login.evaluateJavascript("document.getElementById('signin-entrance-input-signinId').focus();", null);
-                                                        wv_login.evaluateJavascript("document.getElementById('signin-entrance-input-signinId').value = 'ferrari.90@hotmail.it_';", null);
-
-                                                        countDownLogin = new CountDownLatch(0);
-                                                        logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
-                                                    } else {
-                                                        countDownLogin.countDown();
-                                                        logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_TENTATIVO_LOGIN, TimeUnit.MILLISECONDS);
-                                                    }
-                                                } catch (Exception e) {
-                                                    showMessages(e.getMessage(), true);
-                                                    throw new RuntimeException(e);
-                                                }
-                                            });
-                                        }
-                                );
-
-                                staInserendoEmail = true;
-                            }
-                        } else {
-                            wv_login.evaluateJavascript(
-                                    "document.querySelector('[data-qa=\"web-toolbar#profile-container\"]');",
-                                    divLoggato -> {
-                                        runOnUiThread(() -> {
-                                            try {
-                                                staControllandoLogin = false;
-                                                staLoggandosi = false;
-
-                                                updateProgress((int) countDownLogin.getCount() * 100 / TENTATIVI_LOGIN);
-
-                                                if (!divLoggato.equals("null")) {
                                                     countDownLogin = new CountDownLatch(0);
 
-                                                    isLoggato = true;
-
                                                     logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
-                                                } else {
-                                                    countDownLogin.countDown();
-                                                    logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_TENTATIVO_LOGIN, TimeUnit.MILLISECONDS);
+                                                } catch (Exception e) {
+                                                    showMessages(e.getMessage(), true);
+                                                    throw new RuntimeException(e);
                                                 }
-                                            } catch (Exception e) {
-                                                showMessages(e.getMessage(), true);
-                                                throw new RuntimeException(e);
-                                            }
-                                        });
-                                    }
-                            );
-
-                            staControllandoLogin = true;
+                                            });
+                                        }
+                                );
+                            }
                         }
-                    } else {
+                        else {
+                            showMessages("Ma che cazzo Alfio!", true);
+                            throw new Exception("Ma che cazzo Alfio!");
+                        }
+                    }
+                    else {
                         hideProgressBar();
 
                         if (isLoggato) {
@@ -495,7 +492,6 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                     showMessage(String.format("Check acquisto %1$s (Gioco %2$s di %3$s)", giocoInFetching.Descrizione, cntGiocoProcessato, listaGiochiDaFetchare.size()), false);
 
                     if (!giocoInFetching.IsAcquistato) {
-                        staLeggendoPrezzoDaDettaglio = true;
                         evitaCheckIndesiderati = false;
                         wv_checkAcquistato.loadUrl(giocoInFetching.UrlGioco);
                     }
@@ -562,24 +558,37 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                                             } else {
                                                 updateProgress(cntGiocoProcessato * 100 / totGiochiDaControllare);
 
-                                                SettaProprietàComuniGioco(!prezzo.equals("null") ? prezzo.replace("\"", "") : "?");
+                                                isPrezzoLetto = true;
 
-                                                cntGiocoProcessato++;
-
-                                                showMessage(String.format("Ricerca a pagina %1$s... (Trovati %2$s)", giocoInFetching.PaginaRicerca, listaGiochiTrovati.size()), false);
-
-                                                if (giocoInFetching.ElementoPagina == (totGiochiPerPagina - 1)) {
-                                                    cntPaginaProcessata++;
-
-                                                    SfogliaPagineOnline();
-                                                } else {
-                                                    ResetFetchListaGiochi();
-
-                                                    if (!giocoInFetching.IsGratis || giocoInFetching.IsAcquistato) {
-                                                        evitaFetchIndesiderate = true;
-
-                                                        fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
+                                                if (Arrays.asList(new String[]{"€0,00", "Inclusi", "Gratis", "Acquistato", "Nella raccolta", "Versione di prova del gioco", "?"}).contains(prezzo)) {
+                                                    if (!document.location().equals(giocoInFetching.UrlPaginaRicerca)) {
+                                                        SetDocument(giocoInFetching.UrlPaginaRicerca);
                                                     }
+
+                                                    giocoInFetching.UrlGioco = PLAYSTATION_STORE_URL + document.select(giocoInFetching.AnchorGiocoSelector).first().attr("href");
+                                                    giocoInFetching.SrcAnteprima = document.select(giocoInFetching.ImgAnteprimaSelector).first().attr("src");
+                                                    giocoInFetching.Prezzo = prezzo.replace("\"", "");
+
+                                                    if (!giocoInFetching.Prezzo.equals("?")) {
+                                                        giocoInFetching.IsGratis = true;
+
+                                                        if (Arrays.asList(new String[]{"Acquistato", "Nella raccolta"}).contains(giocoInFetching.Prezzo)) {
+                                                            giocoInFetching.IsAcquistato = true;
+
+                                                            if (isRicercaOffline || !giocoInFetching.IsDisegnato) DisegnaOggetto();
+
+                                                            fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
+                                                        } else {
+                                                            evitaCheckIndesiderati = false;
+
+                                                            wv_checkAcquistato.loadUrl(giocoInFetching.UrlGioco);
+                                                        }
+
+                                                        listaGiochiTrovati.add(giocoInFetching);
+                                                    }
+                                                }
+                                                else {
+                                                    fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
                                                 }
                                             }
                                         } catch (Exception e) {
@@ -590,6 +599,25 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                                 }
 
                         );
+                    }
+                    else {
+                        cntGiocoProcessato++;
+
+                        showMessage(String.format("Ricerca a pagina %1$s... (Trovati %2$s)", giocoInFetching.PaginaRicerca, listaGiochiTrovati.size()), false);
+
+                        if (giocoInFetching.ElementoPagina == (totGiochiPerPagina - 1)) {
+                            cntPaginaProcessata++;
+
+                            SfogliaPagineOnline();
+                        } else {
+                            ResetFetchListaGiochi();
+
+                            if (!giocoInFetching.IsGratis || giocoInFetching.IsAcquistato) {
+                                evitaFetchIndesiderate = true;
+
+                                fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
+                            }
+                        }
                     }
                 } catch (Exception e) {
                     showMessages(e.getMessage(), true);
@@ -671,9 +699,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                 try {
                     staCheckandoAcquistato = true;
 
-                    if (staLeggendoPrezzoFinale || evitaCheckIndesiderati) {
-                        checkaAcquistatoScheduledFuture = scheduledExecutorService.schedule(checkaAcquistato, INTERVALLO_TENTATIVO_CHECK_ACQUISTATO, TimeUnit.MILLISECONDS);
-                    } else if (giocoInFetching != null && (isRicercaOffline || !giocoInFetching.IsAcquistato) && countDownCheckAcquistato.getCount() > 0) {
+                    if (giocoInFetching != null && (isRicercaOffline || !giocoInFetching.IsAcquistato)) {
                         String jsCheckAcquistato =
                             "(function() {" +
                             "   var isAcquistato = false;" +
@@ -724,8 +750,6 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                                     });
                                 }
                         );
-
-                        staLeggendoPrezzoFinale = true;
                     }
                 } catch (Exception e) {
                     showMessages(e.getMessage(), true);
@@ -739,20 +763,12 @@ public class PS4ScrapingActivity extends AppCompatActivity {
     private void ResetLogin() {
         countDownLogin = new CountDownLatch(TENTATIVI_LOGIN);
         staLoggandosi = false;
-        staInserendoEmail = false;
-        staInserendoPassword = false;
-        staControllandoLogin = false;
         if (logginatiScheduledFuture != null) logginatiScheduledFuture.cancel(true);
     }
 
     private void ResetFetchListaGiochi() {
         countDownFetch = new CountDownLatch(TENTATIVI_FETCH_LISTA_GIOCHI);
         staFetchandoListaGiochi = false;
-        staLeggendoDescrizioneDaRicerca = false;
-        staLeggendoPrezzoDaRicerca = false;
-        staLeggendoPrezzoDaDettaglio = false;
-        isDescrizioneLetta = false;
-        isPrezzoLetto = false;
         evitaFetchIndesiderate = false;
         if (fetchaListaGiochiScheduledFuture != null) fetchaListaGiochiScheduledFuture.cancel(true);
     }
@@ -760,7 +776,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
     private void ResetCheckaAcquistato() {
         countDownCheckAcquistato = new CountDownLatch(TENTATIVI_CHECK_ACQUISTATO);
         staCheckandoAcquistato = false;
-        staLeggendoPrezzoFinale = false;
+        evitaCheckIndesiderati = false;
         if (checkaAcquistatoScheduledFuture != null) checkaAcquistatoScheduledFuture.cancel(true);
     }
 
@@ -837,20 +853,25 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                 bottoneGioco.setPadding(30, 0, 30,0);
                 ll_linearLayout.addView(bottoneGioco);
 
-                InputStream inputStreamAnteprimaGioco = new URL(giocoInFetching.SrcAnteprima.replace("54&thumb=true", String.valueOf(256))).openStream();
-                Bitmap bitmapAnteprimaGioco = BitmapFactory.decodeStream(inputStreamAnteprimaGioco);
-                ImageView imageView = new ImageView(PS4ScrapingActivity.this);
-                imageView.setLayoutParams(
-                        new LinearLayout.LayoutParams(
-                                ViewGroup.LayoutParams.MATCH_PARENT,
-                                ViewGroup.LayoutParams.MATCH_PARENT
-                        )
-                );
-                imageView.setImageBitmap(bitmapAnteprimaGioco);
-                imageView.setOnClickListener(v -> {
-                    startActivity(new Intent(Intent.ACTION_VIEW).setData(Uri.parse(bottoneUrlGioco)));
-                });
-                ll_linearLayout.addView(imageView);
+                if(giocoInFetching.SrcAnteprima != null) {
+                    InputStream inputStreamAnteprimaGioco = new URL(giocoInFetching.SrcAnteprima.replace("54&thumb=true", String.valueOf(256))).openStream();
+                    Bitmap bitmapAnteprimaGioco = BitmapFactory.decodeStream(inputStreamAnteprimaGioco);
+                    ImageView imageView = new ImageView(PS4ScrapingActivity.this);
+                    imageView.setLayoutParams(
+                            new LinearLayout.LayoutParams(
+                                    ViewGroup.LayoutParams.MATCH_PARENT,
+                                    ViewGroup.LayoutParams.MATCH_PARENT
+                            )
+                    );
+                    imageView.setImageBitmap(bitmapAnteprimaGioco);
+                    imageView.setOnClickListener(v -> {
+                        startActivity(new Intent(Intent.ACTION_VIEW).setData(Uri.parse(bottoneUrlGioco)));
+                    });
+                    ll_linearLayout.addView(imageView);
+                }
+                else {
+                    Boolean chiappa = true;
+                }
 
                 Space spazio2 = new Space(PS4ScrapingActivity.this);
                 spazio2.setLayoutParams(
@@ -895,36 +916,6 @@ public class PS4ScrapingActivity extends AppCompatActivity {
             }
 
         });
-    }
-
-    private void SettaProprietàComuniGioco(String prezzo) {
-        if (Arrays.asList(new String[]{"€0,00", "Inclusi", "Gratis", "Acquistato", "Nella raccolta", "Versione di prova del gioco", "?"}).contains(prezzo)) {
-            if (!document.location().equals(giocoInFetching.UrlPaginaRicerca)) {
-                SetDocument(giocoInFetching.UrlPaginaRicerca);
-            }
-
-            giocoInFetching.UrlGioco = PLAYSTATION_STORE_URL + document.select(giocoInFetching.AnchorGiocoSelector).first().attr("href");
-            giocoInFetching.SrcAnteprima = document.select(giocoInFetching.ImgAnteprimaSelector).first().attr("src");
-            giocoInFetching.Prezzo = prezzo.replace("\"", "");
-
-            if (!giocoInFetching.Prezzo.equals("?")) {
-                giocoInFetching.IsGratis = true;
-
-                if (Arrays.asList(new String[]{"Acquistato", "Nella raccolta"}).contains(giocoInFetching.Prezzo)) {
-                    giocoInFetching.IsAcquistato = true;
-
-                    if (isRicercaOffline || !giocoInFetching.IsDisegnato) DisegnaOggetto();
-                } else {
-                    evitaCheckIndesiderati = false;
-
-                    wv_checkAcquistato.loadUrl(giocoInFetching.UrlGioco);
-                }
-
-                listaGiochiTrovati.add(giocoInFetching);
-            }
-        }
-
-        isPrezzoLetto = true;
     }
 
 
