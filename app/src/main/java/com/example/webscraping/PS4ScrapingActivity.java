@@ -335,7 +335,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                 try {
                     staLoggandosi = true;
 
-                    if (!isLoggato && countDownLogin.getCount() > 0 && (!isEmailInserita || !isPasswordInserita)) {
+                    if (!isLoggato && countDownLogin.getCount() > 0) {
                         String currentUrl = wv_login.getUrl();
 
                         if (currentUrl != null) {
@@ -380,8 +380,6 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                                                             countDownLogin.countDown();
                                                             logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_TENTATIVO_LOGIN, TimeUnit.MILLISECONDS);
                                                         } else {
-                                                            isEmailInserita = true;
-
                                                             wv_login.evaluateJavascript("document.getElementById('signin-entrance-input-signinId').focus();", null);
                                                             wv_login.evaluateJavascript("document.getElementById('signin-entrance-input-signinId').value = 'ferrari.90@hotmail.it_';", null);
 
@@ -406,14 +404,15 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                                                     updateProgress((int) countDownLogin.getCount() * 100 / TENTATIVI_LOGIN);
 
                                                     if (divLoggato.equals("null")) {
-                                                        ResetLogin();
+                                                        countDownLogin.countDown();
+                                                        logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_TENTATIVO_LOGIN, TimeUnit.MILLISECONDS);
                                                     } else {
                                                         isLoggato = true;
+
+                                                        countDownLogin = new CountDownLatch(0);
+
+                                                        logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
                                                     }
-
-                                                    countDownLogin = new CountDownLatch(0);
-
-                                                    logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
                                                 } catch (Exception e) {
                                                     showMessages(e.getMessage(), true);
                                                     throw new RuntimeException(e);
@@ -560,15 +559,15 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
                                                 isPrezzoLetto = true;
 
-                                                if (Arrays.asList(new String[]{"€0,00", "Inclusi", "Gratis", "Acquistato", "Nella raccolta", "Versione di prova del gioco", "?"}).contains(prezzo)) {
+                                                giocoInFetching.Prezzo = prezzo.replace("\"", "");
+
+                                                if (Arrays.asList(new String[]{"€0,00", "Inclusi", "Gratis", "Acquistato", "Nella raccolta", "Versione di prova del gioco", "?"}).contains(giocoInFetching.Prezzo)) {
                                                     if (!document.location().equals(giocoInFetching.UrlPaginaRicerca)) {
                                                         SetDocument(giocoInFetching.UrlPaginaRicerca);
                                                     }
 
                                                     giocoInFetching.UrlGioco = PLAYSTATION_STORE_URL + document.select(giocoInFetching.AnchorGiocoSelector).first().attr("href");
                                                     giocoInFetching.SrcAnteprima = document.select(giocoInFetching.ImgAnteprimaSelector).first().attr("src");
-                                                    giocoInFetching.Prezzo = prezzo.replace("\"", "");
-
                                                     if (!giocoInFetching.Prezzo.equals("?")) {
                                                         giocoInFetching.IsGratis = true;
 
@@ -605,6 +604,8 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
                         showMessage(String.format("Ricerca a pagina %1$s... (Trovati %2$s)", giocoInFetching.PaginaRicerca, listaGiochiTrovati.size()), false);
 
+                        isPrezzoLetto = false;
+                        isDescrizioneLetta = false;
                         if (giocoInFetching.ElementoPagina == (totGiochiPerPagina - 1)) {
                             cntPaginaProcessata++;
 
