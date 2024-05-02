@@ -450,13 +450,13 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
                     showMessage(String.format("Ricerca Completata! (Trovati %1$s) - Ultimo gioco = Pag. %2$s / El. %3$s", listaGiochiTrovati.size(), cntPaginaProcessata, cntGiocoProcessato), false);
 
+                    saveJson(GIOCHI_OFFLINE_JSON_NAME, listaGiochiTrovati);
+
                     ClearWebView(wv_fetchListaGiochi, false);
                     DistruggiWebView(wv_checkAcquistato);
 
                     fetchaListaGiochiScheduledFuture.cancel(true);
                     checkaAcquistatoScheduledFuture.cancel(true);
-
-                    saveJson(GIOCHI_OFFLINE_JSON_NAME, listaGiochiTrovati);
                 }
             } catch (Exception e) {
                 showMessages(e.getMessage(), true);
@@ -562,7 +562,6 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                                                             fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
                                                         } else {
                                                             evitaCheckIndesiderati = false;
-
                                                             wv_checkAcquistato.loadUrl(giocoInFetching.UrlGioco);
                                                         }
 
@@ -620,29 +619,27 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                 try {
                     staCheckandoAcquistato = true;
 
-                    String jsCheckAcquistato =
-                            "(function() {" +
-                                    "   var isAcquistato = false;" +
-                                    "   var spans = document.querySelectorAll('" +
-                                    "       span[data-qa=\"mfeCtaMain#offer0#finalPrice\"]," +
-                                    "       span[data-qa=\"mfeCtaMain#offer1#finalPrice\"]," +
-                                    "       span[data-qa=\"mfeCtaMain#offer2#finalPrice\"]," +
-                                    "       span[data-qa=\"mfeUpsell#productEdition0#ctaWithPrice#offer0#finalPrice\"]," +
-                                    "       span[data-qa=\"mfeUpsell#productEdition1#ctaWithPrice#offer0#finalPrice\"]," +
-                                    "       span[data-qa=\"mfeUpsell#productEdition2#ctaWithPrice#offer0#finalPrice\"]," +
-                                    "       span[data-qa=\"mfeUpsell#productEdition3#ctaWithPrice#offer0#finalPrice\"]," +
-                                    "       span[data-qa=\"mfeUpsell#productEdition4#ctaWithPrice#offer0#finalPrice\"]" +
-                                    "   ');" +
-                                    "   for (var cntSpan = 0; cntSpan < spans.length - 1; cntSpan++) {" +
-                                    "       if (spans[cntSpan].innerText == \"Acquistato\" || spans[cntSpan].innerText == \"Nella raccolta\") {"  +
-                                    "           isAcquistato = true;" +
-                                    "           break;" +
-                                    "       }" +
-                                    "   }" +
-                                    "   return isAcquistato;" +
-                                    "})()";
                     wv_checkAcquistato.evaluateJavascript(
-                            jsCheckAcquistato,
+                            "(function() {" +
+                            "   var isAcquistato = false;" +
+                            "   var spans = document.querySelectorAll('" +
+                            "       span[data-qa=\"mfeCtaMain#offer0#finalPrice\"]," +
+                            "       span[data-qa=\"mfeCtaMain#offer1#finalPrice\"]," +
+                            "       span[data-qa=\"mfeCtaMain#offer2#finalPrice\"]," +
+                            "       span[data-qa=\"mfeUpsell#productEdition0#ctaWithPrice#offer0#finalPrice\"]," +
+                            "       span[data-qa=\"mfeUpsell#productEdition1#ctaWithPrice#offer0#finalPrice\"]," +
+                            "       span[data-qa=\"mfeUpsell#productEdition2#ctaWithPrice#offer0#finalPrice\"]," +
+                            "       span[data-qa=\"mfeUpsell#productEdition3#ctaWithPrice#offer0#finalPrice\"]," +
+                            "       span[data-qa=\"mfeUpsell#productEdition4#ctaWithPrice#offer0#finalPrice\"]" +
+                            "   ');" +
+                            "   for (var cntSpan = 0; cntSpan < spans.length - 1; cntSpan++) {" +
+                            "       if (spans[cntSpan].innerText == \"Acquistato\" || spans[cntSpan].innerText == \"Nella raccolta\") {"  +
+                            "           isAcquistato = true;" +
+                            "           break;" +
+                            "       }" +
+                            "   }" +
+                            "   return isAcquistato;" +
+                            "})()",
                             isAcquistato -> {
                                 runOnUiThread(() -> {
                                     try {
@@ -684,29 +681,27 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                     staCheckandoAcquistato = true;
 
                     if (giocoInFetching != null && (isRicercaOffline || !giocoInFetching.IsAcquistato)) {
-                        String jsCheckAcquistato =
-                            "(function() {" +
-                            "   var isAcquistato = false;" +
-                            "   var spans = document.querySelectorAll('" +
-                            "       span[data-qa=\"mfeCtaMain#offer0#finalPrice\"]," +
-                            "       span[data-qa=\"mfeCtaMain#offer1#finalPrice\"]," +
-                            "       span[data-qa=\"mfeCtaMain#offer2#finalPrice\"]," +
-                            "       span[data-qa=\"mfeUpsell#productEdition0#ctaWithPrice#offer0#finalPrice\"]," +
-                            "       span[data-qa=\"mfeUpsell#productEdition1#ctaWithPrice#offer0#finalPrice\"]," +
-                            "       span[data-qa=\"mfeUpsell#productEdition2#ctaWithPrice#offer0#finalPrice\"]," +
-                            "       span[data-qa=\"mfeUpsell#productEdition3#ctaWithPrice#offer0#finalPrice\"]," +
-                            "       span[data-qa=\"mfeUpsell#productEdition4#ctaWithPrice#offer0#finalPrice\"]" +
-                            "   ');" +
-                            "   for (var cntSpan = 0; cntSpan < spans.length - 1; cntSpan++) {" +
-                            "       if (spans[cntSpan].innerText == \"Acquistato\" || spans[cntSpan].innerText == \"Nella raccolta\") {"  +
-                            "           isAcquistato = true;" +
-                            "           break;" +
-                            "       }" +
-                            "   }" +
-                            "   return isAcquistato;" +
-                            "})()";
                         wv_checkAcquistato.evaluateJavascript(
-                                jsCheckAcquistato,
+                                "(function() {" +
+                                "   var isAcquistato = false;" +
+                                "   var spans = document.querySelectorAll('" +
+                                "       span[data-qa=\"mfeCtaMain#offer0#finalPrice\"]," +
+                                "       span[data-qa=\"mfeCtaMain#offer1#finalPrice\"]," +
+                                "       span[data-qa=\"mfeCtaMain#offer2#finalPrice\"]," +
+                                "       span[data-qa=\"mfeUpsell#productEdition0#ctaWithPrice#offer0#finalPrice\"]," +
+                                "       span[data-qa=\"mfeUpsell#productEdition1#ctaWithPrice#offer0#finalPrice\"]," +
+                                "       span[data-qa=\"mfeUpsell#productEdition2#ctaWithPrice#offer0#finalPrice\"]," +
+                                "       span[data-qa=\"mfeUpsell#productEdition3#ctaWithPrice#offer0#finalPrice\"]," +
+                                "       span[data-qa=\"mfeUpsell#productEdition4#ctaWithPrice#offer0#finalPrice\"]" +
+                                "   ');" +
+                                "   for (var cntSpan = 0; cntSpan < spans.length - 1; cntSpan++) {" +
+                                "       if (spans[cntSpan].innerText == \"Acquistato\" || spans[cntSpan].innerText == \"Nella raccolta\") {"  +
+                                "           isAcquistato = true;" +
+                                "           break;" +
+                                "       }" +
+                                "   }" +
+                                "   return isAcquistato;" +
+                                "})()",
                                 isAcquistato -> {
                                     runOnUiThread(() -> {
                                         try {
@@ -722,8 +717,6 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
                                                 ResetCheckaAcquistato();
 
-                                                evitaCheckIndesiderati = true;
-
                                                 giocoInFetching = null;
                                                 cntGiocoProcessato++;
 
@@ -735,7 +728,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                                             throw new RuntimeException(e);
                                         }
                                     });
-                                }
+                            }
                         );
                     }
                 } catch (Exception e) {
