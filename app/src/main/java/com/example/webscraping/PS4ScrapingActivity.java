@@ -168,6 +168,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
         WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG);
 
         logginati = new Logginati();
+        isLoggato = false;
 
         isRicercaOffline = IsRicercaOffline();
         if (isRicercaOffline) {
