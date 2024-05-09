@@ -430,7 +430,8 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                         if (isLoggato) {
                             showMessages("Login effettuato!", false);
 
-                            DistruggiWebView(wv_login);
+                            //DistruggiWebView(wv_login);
+                            wv_login.setVisibility(View.GONE);
 
                             InizializzaListaGiochi();
                         } else {
@@ -730,6 +731,8 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                                                 ResetCheckaAcquistato();
 
                                                 evitaCheckIndesiderati = true;
+
+                                                listaGiochiTrovati.add(giocoInFetching);
 
                                                 countDownCheckAcquistato = new CountDownLatch(0);
                                                 fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
