@@ -274,7 +274,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                 super.onPageFinished(webView, url);
                 if (webView.getId() == WEB_VIEW_LOGIN_ID && !staLoggandosi) {
                     logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_THREAD, TimeUnit.MILLISECONDS);
-                } else if (webView.getId() == WEB_VIEW_FETCH_LISTA_GIOCHI_ID && !staFetchandoListaGiochi) {
+                } else if (webView.getId() == WEB_VIEW_FETCH_LISTA_GIOCHI_ID && !staFetchandoListaGiochi && !evitaFetchIndesiderati) {
                     fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_THREAD, TimeUnit.MILLISECONDS);
                 } else if (webView.getId() == WEB_VIEW_CHECK_ACQUISTATO_ID && !staCheckandoAcquistato && !evitaCheckIndesiderati) {
                     if (isRicercaOffline) {
@@ -426,6 +426,8 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                     }
                     else {
                         hideProgressBar();
+
+                        evitaLoginIndesiderate = true;
 
                         if (isLoggato) {
                             showMessages("Login effettuato!", false);
@@ -598,6 +600,8 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
                         showMessage(String.format("Ricerca a pagina %1$s... (Trovati %2$s)", giocoInFetching.PaginaRicerca, listaGiochiTrovati.size()), false);
 
+                        evitaFetchIndesiderati = true;
+
                         if (giocoInFetching.Descrizione == null || giocoInFetching.ElementoPagina == (totGiochiPerPagina - 1)) {
                             giocoInFetching = null;
 
@@ -730,9 +734,9 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
                                                 ResetCheckaAcquistato();
 
-                                                evitaCheckIndesiderati = true;
-
                                                 listaGiochiTrovati.add(giocoInFetching);
+
+                                                evitaCheckIndesiderati = true;
 
                                                 countDownCheckAcquistato = new CountDownLatch(0);
                                                 fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
