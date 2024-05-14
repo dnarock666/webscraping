@@ -107,7 +107,8 @@ public class PS4ScrapingActivity extends AppCompatActivity {
     private Gson gson;
 
     private List<OggettoJson> listaGiochiDaFetchare;
-    private List<OggettoJson> listaGiochiTrovati;
+    private List<OggettoJson> listaGiochiGratisTrovati;
+    private List<OggettoJson> listaGiochiGratisNonAcquistati;
     private OggettoJson giocoInFetching;
 
     private OkHttpClient okHttpClient;
@@ -123,8 +124,8 @@ public class PS4ScrapingActivity extends AppCompatActivity {
     private static final int WEB_VIEW_CHECK_ACQUISTATO_ID = R.id.wv_checkAcquistato;
 
     private static final int TENTATIVI_LOGIN = 5;
-    private static final int TENTATIVI_FETCH_LISTA_GIOCHI = 3;
-    private static final int TENTATIVI_CHECK_ACQUISTATO = 3;
+    private static final int TENTATIVI_FETCH_LISTA_GIOCHI = 5;
+    private static final int TENTATIVI_CHECK_ACQUISTATO = 5;
 
     private static final int INTERVALLO_TENTATIVO_LOGIN = 1000 * 1;
     private static final int INTERVALLO_TENTATIVO_FETCH_LISTA = 1000 * 1;
@@ -188,7 +189,9 @@ public class PS4ScrapingActivity extends AppCompatActivity {
         CaricaFinestraListaGiochi();
         CaricaFinestraCheckAcquisto();
 
-        listaGiochiTrovati = new ArrayList<OggettoJson>();
+        listaGiochiDaFetchare = new ArrayList<OggettoJson>();
+        listaGiochiGratisTrovati = new ArrayList<OggettoJson>();
+        listaGiochiGratisNonAcquistati = new ArrayList<OggettoJson>();
 
         evitaLoginIndesiderate = false;
         wv_login.loadUrl(PLAYSTATION_MAP_URL);
@@ -272,7 +275,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
         public void onPageFinished(WebView webView, String url) {
             try {
                 super.onPageFinished(webView, url);
-                if (webView.getId() == WEB_VIEW_LOGIN_ID && !staLoggandosi) {
+                if (webView.getId() == WEB_VIEW_LOGIN_ID && !staLoggandosi && !evitaLoginIndesiderate) {
                     logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_THREAD, TimeUnit.MILLISECONDS);
                 } else if (webView.getId() == WEB_VIEW_FETCH_LISTA_GIOCHI_ID && !staFetchandoListaGiochi && !evitaFetchIndesiderati) {
                     fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_THREAD, TimeUnit.MILLISECONDS);
@@ -459,9 +462,9 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                 } else {
                     hideProgressBar();
 
-                    showMessage(String.format("Ricerca Completata! (Trovati %1$s) - Ultimo gioco = Pag. %2$s / El. %3$s", listaGiochiTrovati.size(), cntPaginaProcessata, cntGiocoProcessato), false);
+                    showMessage(String.format("Ricerca Completata! (Trovati %1$s) - Ultimo gioco = Pag. %2$s / El. %3$s", listaGiochiGratisTrovati.size(), cntPaginaProcessata, cntGiocoProcessato), false);
 
-                    saveJson(GIOCHI_OFFLINE_JSON_NAME, listaGiochiTrovati);
+                    saveJson(GIOCHI_OFFLINE_JSON_NAME, listaGiochiGratisTrovati);
 
                     ClearWebView(wv_fetchListaGiochi, false);
                     DistruggiWebView(wv_checkAcquistato);
@@ -502,7 +505,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                     }
                 } else {
                     txt_msg.setTextColor(Color.rgb(255, 255, 255));
-                    txt_msg.setText(String.format("Ecco la lista dei giochi gratis. (Trovati %s)", cntGiocoProcessato));
+                    txt_msg.setText(String.format("Ecco la lista dei giochi gratis. (Trovati %1$s - Da aggiungere %2$s)", cntGiocoProcessato, listaGiochiGratisNonAcquistati.size()));
 
                     hideProgressBar();
 
@@ -570,7 +573,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
                                                         if (isRicercaOffline || !giocoInFetching.IsDisegnato) DisegnaOggetto();
 
-                                                        listaGiochiTrovati.add(giocoInFetching);
+                                                        listaGiochiGratisTrovati.add(giocoInFetching);
 
                                                         fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
                                                     } else {
@@ -598,7 +601,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
                         ResetFetchListaGiochi();
 
-                        showMessage(String.format("Ricerca a pagina %1$s... (Trovati %2$s)", giocoInFetching.PaginaRicerca, listaGiochiTrovati.size()), false);
+                        showMessage(String.format("Ricerca a pagina %1$s... (Trovati %2$s)", giocoInFetching.PaginaRicerca, listaGiochiGratisTrovati.size()), false);
 
                         evitaFetchIndesiderati = true;
 
@@ -643,6 +646,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                             "       span[data-qa=\"mfeUpsell#productEdition3#ctaWithPrice#offer0#finalPrice\"]," +
                             "       span[data-qa=\"mfeUpsell#productEdition4#ctaWithPrice#offer0#finalPrice\"]" +
                             "   ');" +
+                            "   var prezzi = [];" +
                             "   for (var cntSpan = 0; cntSpan < spans.length - 1; cntSpan++) {" +
                             "       if (" +
                             "           spans[cntSpan].innerText == \"Acquistato\" ||" +
@@ -652,21 +656,38 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                             "           spans[cntSpan].innerText == \"Gratis\" ||" +
                             "           spans[cntSpan].innerText == \"Versione di prova del gioco"+
                             "       ) {"  +
-                            "           isAcquistato = true;" +
-                            "           break;" +
+                            "           prezzi.push(spans[cntSpan].innerText);" +
                             "       }" +
                             "   }" +
-                            "   return isAcquistato;" +
+                            "   return prezzi.join(';');" +
                             "})()",
-                            prezzo -> {
+                            prezzi -> {
                                 runOnUiThread(() -> {
                                     try {
-                                        if (prezzo.equals("null") && countDownCheckAcquistato.getCount() > 0) {
+                                        if (prezzi.equals("null") && countDownCheckAcquistato.getCount() > 0) {
                                             countDownCheckAcquistato.countDown();
                                             checkaAcquistatoScheduledFuture = scheduledExecutorService.schedule(checkaAcquistato, INTERVALLO_TENTATIVO_CHECK_ACQUISTATO, TimeUnit.MILLISECONDS);
                                         } else {
-                                            giocoInFetching.IsAcquistato = prezzo.equals("Acquistato") || prezzo.equals("Nella raccolta");
-                                            giocoInFetching.IsGratis = prezzo.equals("€0,00") || prezzo.equals("Inclusi") || prezzo.equals("Gratis") || prezzo.equals("Versione di prova del gioco") || giocoInFetching.IsAcquistato;
+                                            String[] listaPrezzi = prezzi.split(";");
+
+                                            boolean isAcquistato = false;
+                                            boolean isGratis = false;
+
+                                            for (String prezzo : listaPrezzi) {
+                                                if (prezzo.equals("Acquistato") || prezzo.equals("Nella raccolta")) {
+                                                    isAcquistato = true;
+                                                }
+                                                if (prezzo.equals("€0,00") || prezzo.equals("Inclusi") || prezzo.equals("Gratis") || prezzo.equals("Versione di prova del gioco") || giocoInFetching.IsAcquistato) {
+                                                    isGratis = true;
+                                                }
+                                            }
+
+                                            giocoInFetching.IsAcquistato = isAcquistato;
+                                            giocoInFetching.IsGratis = isGratis;
+
+                                            if (giocoInFetching.IsAcquistato) {
+                                                listaGiochiGratisNonAcquistati.add(giocoInFetching);
+                                            }
 
                                             if (!giocoInFetching.IsDisegnato) DisegnaOggetto();
 
@@ -730,11 +751,15 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                                             } else {
                                                 giocoInFetching.IsAcquistato = isAcquistato.equals("true");
 
+                                                if (giocoInFetching.IsAcquistato) {
+                                                    listaGiochiGratisNonAcquistati.add(giocoInFetching);
+                                                }
+
                                                 if (!giocoInFetching.IsDisegnato) DisegnaOggetto();
 
                                                 ResetCheckaAcquistato();
 
-                                                listaGiochiTrovati.add(giocoInFetching);
+                                                listaGiochiGratisTrovati.add(giocoInFetching);
 
                                                 evitaCheckIndesiderati = true;
 
