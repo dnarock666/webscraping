@@ -254,11 +254,11 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
     @SuppressLint("SetJavaScriptEnabled")
     private void SettaProprietàComuniWebView(WebView webView) {
-        //ClearWebView(webView, false);
+//        ClearWebView(webView, false);
         webView.setWebViewClient(new WebViewClientComune());
         WebSettings webSettings = webView.getSettings();
-        webSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
-        //webSettings.setUserAgentString(WebSettings.getDefaultUserAgent(PS4ScrapingActivity.this));
+//        webSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
+//        webSettings.setUserAgentString(WebSettings.getDefaultUserAgent(PS4ScrapingActivity.this));
         webSettings.setJavaScriptEnabled(true);
 //        webSettings.setDomStorageEnabled(true);
 //        webSettings.setAllowContentAccess(true);
@@ -266,7 +266,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 //        webSettings.setBlockNetworkImage(false);
 //        webSettings.setSafeBrowsingEnabled(false);
 //        webSettings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-        CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);
+//        CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);
     }
 
 
@@ -462,7 +462,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                 } else {
                     hideProgressBar();
 
-                    showMessage(String.format("Ricerca Completata! (Trovati %1$s) - Ultimo gioco = Pag. %2$s / El. %3$s", listaGiochiGratisTrovati.size(), cntPaginaProcessata, cntGiocoProcessato), false);
+                    showMessage(String.format("Ricerca Completata!\n(Trovati %1d - Nuovi %2d - Ultimo a pag. %2d - # %3d)", listaGiochiGratisTrovati.size(), cntPaginaProcessata, cntGiocoProcessato), false);
 
                     saveJson(GIOCHI_OFFLINE_JSON_NAME, listaGiochiGratisTrovati);
 
@@ -505,7 +505,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                     }
                 } else {
                     txt_msg.setTextColor(Color.rgb(255, 255, 255));
-                    txt_msg.setText(String.format("Ecco la lista dei giochi gratis. (Trovati %1$s - Da aggiungere %2$s)", cntGiocoProcessato, listaGiochiGratisNonAcquistati.size()));
+                    txt_msg.setText(String.format("Ecco la lista dei giochi gratis.\n(Trovati %1$s - Da aggiungere %2$s)", cntGiocoProcessato, listaGiochiGratisNonAcquistati.size()));
 
                     hideProgressBar();
 
@@ -601,7 +601,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
                         ResetFetchListaGiochi();
 
-                        showMessage(String.format("Ricerca a pagina %1$s... (Trovati %2$s)", giocoInFetching.PaginaRicerca, listaGiochiGratisTrovati.size()), false);
+                        showMessage(String.format("Ricerca a pagina %1d...\n(Trovati %2d - Nuovi %3d)", giocoInFetching.PaginaRicerca, listaGiochiGratisTrovati.size(), listaGiochiGratisNonAcquistati.size()), false);
 
                         evitaFetchIndesiderati = true;
 
