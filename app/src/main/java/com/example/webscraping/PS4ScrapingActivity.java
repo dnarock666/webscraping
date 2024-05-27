@@ -496,7 +496,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
                     if (!giocoInFetching.IsAcquistato) {
                         evitaCheckIndesiderati = false;
-                        wv_checkAcquistato.loadUrl(giocoInFetching.UrlGioco);
+                        //wv_checkAcquistato.loadUrl(giocoInFetching.UrlGioco);
                     }
                     else {
                         DisegnaOggetto();
@@ -578,7 +578,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                                                         fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
                                                     } else {
                                                         evitaCheckIndesiderati = false;
-                                                        wv_checkAcquistato.loadUrl(giocoInFetching.UrlGioco);
+                                                        //wv_checkAcquistato.loadUrl(giocoInFetching.UrlGioco);
                                                     }
                                                 }
                                                 else {
