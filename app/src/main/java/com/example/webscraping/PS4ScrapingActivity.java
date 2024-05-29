@@ -123,13 +123,13 @@ public class PS4ScrapingActivity extends AppCompatActivity {
     private static final int WEB_VIEW_FETCH_LISTA_GIOCHI_ID = R.id.wv_fetchListaGiochi;
     private static final int WEB_VIEW_CHECK_ACQUISTATO_ID = R.id.wv_checkAcquistato;
 
-    private static final int TENTATIVI_LOGIN = 5;
+    private static final int TENTATIVI_LOGIN = 10;
     private static final int TENTATIVI_FETCH_LISTA_GIOCHI = 5;
     private static final int TENTATIVI_CHECK_ACQUISTATO = 5;
 
-    private static final int INTERVALLO_TENTATIVO_LOGIN = 1000 * 1;
-    private static final int INTERVALLO_TENTATIVO_FETCH_LISTA = 1000 * 1;
-    private static final int INTERVALLO_TENTATIVO_CHECK_ACQUISTATO = 1000 * 1;
+    private static final int INTERVALLO_TENTATIVO_LOGIN = 1000 / 10;
+    private static final int INTERVALLO_TENTATIVO_FETCH_LISTA = 1000 / 10;
+    private static final int INTERVALLO_TENTATIVO_CHECK_ACQUISTATO = 1000 / 10;
     private static final int INTERVALLO_THREAD = 1000 / 10;
 
     private static final int COLORE_INFO = Color.rgb(0, 255, 255);
