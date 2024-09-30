@@ -50,7 +50,9 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -141,6 +143,8 @@ public class PS4ScrapingActivity extends AppCompatActivity {
     private static final String PLAYSTATION_STORE_URL = "https://store.playstation.com";
     private static final String PLAYSTATION_MAP_URL = PLAYSTATION_COM_URL + "/it-it/site-map/";
     private static final String PLAYSTATION_4_GAMES_URL = PLAYSTATION_STORE_URL + "/it-it/category/44d8bb20-653e-431e-8ad0-c0a365f68d2f/";
+
+    private static final CookieManager cookieManager = CookieManager.getInstance();
 
 
     @SuppressLint("MissingInflatedId")
@@ -257,7 +261,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 //        ClearWebView(webView, false);
         webView.setWebViewClient(new WebViewClientComune());
         WebSettings webSettings = webView.getSettings();
-//        webSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
+        webSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
 //        webSettings.setUserAgentString(WebSettings.getDefaultUserAgent(PS4ScrapingActivity.this));
         webSettings.setJavaScriptEnabled(true);
 //        webSettings.setDomStorageEnabled(true);
@@ -266,7 +270,12 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 //        webSettings.setBlockNetworkImage(false);
 //        webSettings.setSafeBrowsingEnabled(false);
 //        webSettings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-//        CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);
+        cookieManager.setAcceptThirdPartyCookies(webView, true);
+        cookieManager.setAcceptCookie(true);
+
+        String cookies = CookieManager.getInstance().getCookie(String.valueOf(webView.getUrl()));
+        Map<String, String> headers = new HashMap<>();
+        headers.put("Cookie", cookies);
     }
 
 
