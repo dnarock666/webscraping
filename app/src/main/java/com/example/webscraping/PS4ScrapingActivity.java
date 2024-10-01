@@ -32,6 +32,8 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 
 import org.jsoup.Jsoup;
@@ -58,6 +60,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -97,8 +100,8 @@ public class PS4ScrapingActivity extends AppCompatActivity {
     private int totPagine;
     private int totGiochiPerPagina;
     private int totGiochiDaControllare;
-    private int cntPaginaProcessata;
-    private int cntGiocoProcessato;
+    private AtomicInteger cntPaginaProcessata;
+    private AtomicInteger cntGiocoProcessato;
 
     private Logginati logginati;
     private FetchaListaGiochiOnline fetchaListaGiochiOnline;
@@ -120,7 +123,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
     private Document document;
 
 
-    private static final  int CONSTRAINT_LAYOUT_ID = R.layout.activity_ps4;
+    private static final int CONSTRAINT_LAYOUT_ID = R.layout.activity_ps4;
     private static final int WEB_VIEW_LOGIN_ID = R.id.wv_login;
     private static final int WEB_VIEW_FETCH_LISTA_GIOCHI_ID = R.id.wv_fetchListaGiochi;
     private static final int WEB_VIEW_CHECK_ACQUISTATO_ID = R.id.wv_checkAcquistato;
@@ -144,8 +147,6 @@ public class PS4ScrapingActivity extends AppCompatActivity {
     private static final String PLAYSTATION_MAP_URL = PLAYSTATION_COM_URL + "/it-it/site-map/";
     private static final String PLAYSTATION_4_GAMES_URL = PLAYSTATION_STORE_URL + "/it-it/category/44d8bb20-653e-431e-8ad0-c0a365f68d2f/";
 
-    private static final CookieManager cookieManager = CookieManager.getInstance();
-
 
     @SuppressLint("MissingInflatedId")
     @Override
@@ -164,8 +165,8 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
         gson = new Gson();
 
-        cntPaginaProcessata = 0;
-        cntGiocoProcessato = 0;
+        cntPaginaProcessata = new AtomicInteger(0);
+        cntGiocoProcessato = new AtomicInteger(0);
 
         System.setProperty("net.dns1", "8.8.8.8");
         System.setProperty("net.dns2", "8.8.4.4");
@@ -260,6 +261,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
     private void SettaProprietàComuniWebView(WebView webView) {
 //        ClearWebView(webView, false);
         webView.setWebViewClient(new WebViewClientComune());
+
         WebSettings webSettings = webView.getSettings();
         webSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
 //        webSettings.setUserAgentString(WebSettings.getDefaultUserAgent(PS4ScrapingActivity.this));
@@ -270,12 +272,16 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 //        webSettings.setBlockNetworkImage(false);
 //        webSettings.setSafeBrowsingEnabled(false);
 //        webSettings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+
+        CookieManager cookieManager = CookieManager.getInstance();
         cookieManager.setAcceptThirdPartyCookies(webView, true);
         cookieManager.setAcceptCookie(true);
 
-        String cookies = CookieManager.getInstance().getCookie(String.valueOf(webView.getUrl()));
+        String cookies = cookieManager.getCookie(String.valueOf(webView.getUrl()));
         Map<String, String> headers = new HashMap<>();
         headers.put("Cookie", cookies);
+
+        cookieManager.flush();
     }
 
 
@@ -429,6 +435,37 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                                             });
                                         }
                                 );
+
+                                wv_login.evaluateJavascript(
+                                        "document.getElementById('__NEXT_DATA__').innerHTML",
+                                        value -> {
+                                            runOnUiThread(() -> {
+                                                try {
+                                                    updateProgress((int) countDownLogin.getCount() * 100 / TENTATIVI_LOGIN);
+
+                                                    JsonObject jsonObject = JsonParser.parseString(value).getAsJsonObject();
+                                                    String locale = jsonObject
+                                                            .getAsJsonObject("props")
+                                                            .getAsJsonObject("pageProps")
+                                                            .get("locale")
+                                                            .getAsString();
+
+                                                    isLoggato = !locale.equals("null");
+
+                                                    if (!isLoggato && countDownLogin.getCount() > 0) {
+                                                        countDownLogin.countDown();
+                                                        logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_TENTATIVO_LOGIN, TimeUnit.MILLISECONDS);
+                                                    } else {
+                                                        countDownLogin = new CountDownLatch(0);
+                                                        logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
+                                                    }
+                                                } catch (Exception e) {
+                                                    showMessages(e.getMessage(), true);
+                                                    throw new RuntimeException(e);
+                                                }
+                                            });
+                                        }
+                                );
                             }
                         }
                         else {
@@ -465,13 +502,13 @@ public class PS4ScrapingActivity extends AppCompatActivity {
     private void SfogliaPagineOnline() {
         runOnUiThread(() -> {
             try {
-                if (cntPaginaProcessata < totPagine) {
+                if (cntPaginaProcessata.get() < totPagine) {
                     evitaFetchIndesiderati = false;
-                    wv_fetchListaGiochi.loadUrl(listaGiochiDaFetchare.get(cntGiocoProcessato).UrlPaginaRicerca);
+                    wv_fetchListaGiochi.loadUrl(listaGiochiDaFetchare.get(cntGiocoProcessato.get()).UrlPaginaRicerca);
                 } else {
                     hideProgressBar();
 
-                    showMessage(String.format("Ricerca Completata!\n(Trovati %1d - Nuovi %2d - Ultimo a pag. %2d - # %3d)", listaGiochiGratisTrovati.size(), cntPaginaProcessata, cntGiocoProcessato), false);
+                    showMessage(String.format("Ricerca Completata!\n(Trovati %1d - Nuovi %2d - Ultimo a pag. %2d - # %3d)", listaGiochiGratisTrovati.size(), cntPaginaProcessata.get(), cntGiocoProcessato.get()), false);
 
                     saveJson(GIOCHI_OFFLINE_JSON_NAME, listaGiochiGratisTrovati);
 
@@ -494,14 +531,14 @@ public class PS4ScrapingActivity extends AppCompatActivity {
             runOnUiThread(() -> {
                 staFetchandoListaGiochi = true;
 
-                if (cntGiocoProcessato < totGiochiDaControllare) {
-                    giocoInFetching = listaGiochiDaFetchare.get(cntGiocoProcessato);
+                if (cntGiocoProcessato.get() < totGiochiDaControllare) {
+                    giocoInFetching = listaGiochiDaFetchare.get(cntGiocoProcessato.get());
 
-                    cntGiocoProcessato++;
+                    cntGiocoProcessato.getAndIncrement();
 
-                    updateProgress(cntGiocoProcessato * 100 / totGiochiDaControllare);
+                    updateProgress(cntGiocoProcessato.get() * 100 / totGiochiDaControllare);
 
-                    showMessage(String.format("Check acquisto %1$s (Gioco %2$s di %3$s)", giocoInFetching.Descrizione, cntGiocoProcessato, listaGiochiDaFetchare.size()), false);
+                    showMessage(String.format("Check acquisto %1$s (Gioco %2$s di %3$s)", giocoInFetching.Descrizione, cntGiocoProcessato.get(), listaGiochiDaFetchare.size()), false);
 
                     if (!giocoInFetching.IsAcquistato) {
                         evitaCheckIndesiderati = false;
@@ -514,7 +551,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                     }
                 } else {
                     txt_msg.setTextColor(Color.rgb(255, 255, 255));
-                    txt_msg.setText(String.format("Ecco la lista dei giochi gratis.\n(Trovati %1$s - Da aggiungere %2$s)", cntGiocoProcessato, listaGiochiGratisNonAcquistati.size()));
+                    txt_msg.setText(String.format("Ecco la lista dei giochi gratis.\n(Trovati %1$s - Da aggiungere %2$s)", cntGiocoProcessato.get(), listaGiochiGratisNonAcquistati.size()));
 
                     hideProgressBar();
 
@@ -532,7 +569,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                     staFetchandoListaGiochi = true;
 
                     if (giocoInFetching == null && countDownFetch.getCount() > 0) {
-                        giocoInFetching = listaGiochiDaFetchare.get(cntGiocoProcessato);
+                        giocoInFetching = listaGiochiDaFetchare.get(cntGiocoProcessato.get());
 
                         wv_fetchListaGiochi.evaluateJavascript(
                                 "document.querySelector(\"" + giocoInFetching.TxtDescrizioneSelector + "\").innerText",
@@ -604,9 +641,9 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                         );
                     }
                     else {
-                        cntGiocoProcessato++;
+                        cntGiocoProcessato.getAndIncrement();
 
-                        updateProgress(cntGiocoProcessato * 100 / totGiochiDaControllare);
+                        updateProgress(cntGiocoProcessato.get() * 100 / totGiochiDaControllare);
 
                         ResetFetchListaGiochi();
 
@@ -617,7 +654,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                         if (giocoInFetching.Descrizione == null || giocoInFetching.ElementoPagina == (totGiochiPerPagina - 1)) {
                             giocoInFetching = null;
 
-                            cntPaginaProcessata++;
+                            cntPaginaProcessata.incrementAndGet();
 
                             SfogliaPagineOnline();
                         } else {
@@ -792,26 +829,26 @@ public class PS4ScrapingActivity extends AppCompatActivity {
     }
 
 
-    private void ResetLogin() {
+    private synchronized void ResetLogin() {
         staLoggandosi = false;
         countDownLogin = new CountDownLatch(TENTATIVI_LOGIN);
         if (logginatiScheduledFuture != null) logginatiScheduledFuture.cancel(true);
     }
 
-    private void ResetFetchListaGiochi() {
+    private synchronized void ResetFetchListaGiochi() {
         staFetchandoListaGiochi = false;
         countDownFetch = new CountDownLatch(TENTATIVI_FETCH_LISTA_GIOCHI);
         if (fetchaListaGiochiScheduledFuture != null) fetchaListaGiochiScheduledFuture.cancel(true);
     }
 
-    private void ResetCheckaAcquistato() {
+    private synchronized void ResetCheckaAcquistato() {
         staCheckandoAcquistato = false;
         countDownCheckAcquistato = new CountDownLatch(TENTATIVI_CHECK_ACQUISTATO);
         if (checkaAcquistatoScheduledFuture != null) checkaAcquistatoScheduledFuture.cancel(true);
     }
 
 
-    private void SetDocument(String url) {
+    private synchronized void SetDocument(String url) {
         try {
             okHttpClient = new OkHttpClient.Builder()
                     .connectTimeout(Integer.MAX_VALUE, TimeUnit.MILLISECONDS)
@@ -829,7 +866,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
         }
     }
 
-    private Document GetDocument() {
+    private synchronized Document GetDocument() {
         try {
             if (document == null) {
                 SetDocument(PLAYSTATION_4_GAMES_URL + giocoInFetching.PaginaRicerca);
@@ -841,7 +878,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
         }
     }
 
-    private void DisegnaOggetto() {
+    private synchronized void DisegnaOggetto() {
         runOnUiThread(() -> {
             try {
                 TextView txtTitoloGioco = new TextView(PS4ScrapingActivity.this);
@@ -949,21 +986,21 @@ public class PS4ScrapingActivity extends AppCompatActivity {
     }
 
 
-    private void DistruggiWebView(WebView webView) {
+    private synchronized void DistruggiWebView(WebView webView) {
         ll_linearLayout.removeView(webView);
         //ClearWebView(webView, false);
         webView.destroy();
         webView = null;
     }
 
-    private void ClearWebView(WebView webView, Boolean clearCache) {
+    private synchronized void ClearWebView(WebView webView, Boolean clearCache) {
         webView.clearHistory();
         webView.clearFocus();
         webView.clearFormData();
         webView.clearCache(clearCache);
     }
 
-    private Boolean IsRicercaOffline() {
+    private synchronized Boolean IsRicercaOffline() {
         try {
             File jsonFile = new File("/data/data/com.example.webscraping/files/" + GIOCHI_OFFLINE_JSON_NAME + ".json");
             return jsonFile.exists();
@@ -973,7 +1010,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
         }
     }
 
-    private Integer GetTotalePagine() {
+    private synchronized Integer GetTotalePagine() {
         try {
             if (document == null || !document.location().equals(PLAYSTATION_4_GAMES_URL)) {
                 SetDocument(PLAYSTATION_4_GAMES_URL);
@@ -986,7 +1023,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
         }
     }
 
-    private Integer GetTotaleElementi() {
+    private synchronized Integer GetTotaleElementi() {
         try {
             if (document == null || !document.location().equals(PLAYSTATION_4_GAMES_URL)) {
                 SetDocument(PLAYSTATION_4_GAMES_URL);
@@ -999,7 +1036,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
         }
     }
 
-    public List<OggettoJson> CreaListaOggettiJson(int totPagine, int totElementi) {
+    public synchronized List<OggettoJson> CreaListaOggettiJson(int totPagine, int totElementi) {
         List<OggettoJson> ListaOggetti = new ArrayList<>();
 
         for (int page = 1; page <= totPagine; page++) {
@@ -1024,7 +1061,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
         return ListaOggetti;
     }
 
-    public String getJson(String jsonName) {
+    public synchronized String getJson(String jsonName) {
         String listaGiochiJsonFullName = String.format("%s.json", jsonName);
         FileInputStream jsonInputStream;
         InputStreamReader jsonInputStreamReader;
@@ -1051,7 +1088,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
         }
     }
 
-    public void saveJson(String jsonName, List<OggettoJson> ListaOggetti) {
+    public synchronized void saveJson(String jsonName, List<OggettoJson> ListaOggetti) {
         String listaGiochiJsonFullName = String.format("%s.json", jsonName);
         FileOutputStream jsonOutputStream;
         OutputStreamWriter jsonOutputStreamWriter;
@@ -1070,18 +1107,18 @@ public class PS4ScrapingActivity extends AppCompatActivity {
     }
 
 
-    private void updateProgress(int progress) {
+    private synchronized void updateProgress(int progress) {
         runOnUiThread(() -> {
             pb_progressBar.setVisibility(View.VISIBLE);
             pb_progressBar.setProgress(progress);
         });
     }
 
-    private void hideProgressBar() {
+    private synchronized void hideProgressBar() {
         runOnUiThread(() -> pb_progressBar.setVisibility(ProgressBar.GONE));
     }
 
-    private void showToast(String message) {
+    private synchronized void showToast(String message) {
         runOnUiThread(() ->
                 Toast.makeText(
                         PS4ScrapingActivity.this,
@@ -1091,14 +1128,14 @@ public class PS4ScrapingActivity extends AppCompatActivity {
         );
     }
 
-    private void showMessage(String message, Boolean isErrore) {
+    private synchronized void showMessage(String message, Boolean isErrore) {
         runOnUiThread(() -> {
             txt_msg.setTextColor(isErrore ? COLORE_ERRORE : COLORE_INFO);
             txt_msg.setText(message);
         });
     }
 
-    private void showMessages(String message, Boolean isErrore) {
+    private synchronized void showMessages(String message, Boolean isErrore) {
         showToast(message);
         showMessage(message, isErrore);
     }
