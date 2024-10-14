@@ -131,14 +131,14 @@ public class PS4ScrapingActivity extends AppCompatActivity {
     private static final int WEB_VIEW_FETCH_LISTA_GIOCHI_ID = R.id.wv_fetchListaGiochi;
     private static final int WEB_VIEW_CHECK_ACQUISTATO_ID = R.id.wv_checkAcquistato;
 
-    private static final int TENTATIVI_LOGIN = 10;
+    private static final int TENTATIVI_LOGIN = 5;
     private static final int TENTATIVI_FETCH_LISTA_GIOCHI = 5;
     private static final int TENTATIVI_CHECK_ACQUISTATO = 5;
 
-    private static final int INTERVALLO_TENTATIVO_LOGIN = 1000 / 10;
-    private static final int INTERVALLO_TENTATIVO_FETCH_LISTA = 1000 / 10;
-    private static final int INTERVALLO_TENTATIVO_CHECK_ACQUISTATO = 1000 / 10;
-    private static final int INTERVALLO_THREAD = 1000 / 10;
+    private static final int INTERVALLO_TENTATIVO_LOGIN = 1000 / 1;
+    private static final int INTERVALLO_TENTATIVO_FETCH_LISTA = 1000 / 1;
+    private static final int INTERVALLO_TENTATIVO_CHECK_ACQUISTATO = 1000 / 1;
+    private static final int INTERVALLO_THREAD = 1000 / 1;
 
     private static final int COLORE_INFO = Color.rgb(0, 255, 255);
     private static final int COLORE_ERRORE = Color.rgb(255, 0, 0);
@@ -300,7 +300,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
     private class WebViewClientComune extends WebViewClient {
         @Override
-        public void onPageFinished(WebView webView, String url) {
+        public synchronized void onPageFinished(WebView webView, String url) {
             try {
                 super.onPageFinished(webView, url);
                 if (webView.getId() == WEB_VIEW_LOGIN_ID && !staLoggandosi.get() && !evitaLoginIndesiderate.get()) {
@@ -335,12 +335,12 @@ public class PS4ScrapingActivity extends AppCompatActivity {
         }
 
         @Override
-        public void onPageStarted(WebView view, String url, Bitmap favicon) {
+        public synchronized void onPageStarted(WebView view, String url, Bitmap favicon) {
             super.onPageStarted(view, url, favicon);
         }
 
         @Override
-        public void onReceivedError(WebView webView, WebResourceRequest webResourceRequest, WebResourceError webResourceError) {
+        public synchronized void onReceivedError(WebView webView, WebResourceRequest webResourceRequest, WebResourceError webResourceError) {
             super.onReceivedError(webView, webResourceRequest, webResourceError);
             if (
                     !webResourceError.getDescription().equals("net::ERR_TIMED_OUT") &&
@@ -353,14 +353,14 @@ public class PS4ScrapingActivity extends AppCompatActivity {
         }
 
         @Override
-        public void onReceivedHttpError(WebView webView, WebResourceRequest webResourceRequest, WebResourceResponse webResourceResponse) {
+        public synchronized void onReceivedHttpError(WebView webView, WebResourceRequest webResourceRequest, WebResourceResponse webResourceResponse) {
             super.onReceivedHttpError(webView, webResourceRequest, webResourceResponse);
             //showMessages(String.valueOf(webResourceResponse.getStatusCode()), true);
         }
 
         @SuppressLint("WebViewClientOnReceivedSslError")
         @Override
-        public void onReceivedSslError(WebView webView, SslErrorHandler sslErrorHandler, SslError sslError) {
+        public synchronized void onReceivedSslError(WebView webView, SslErrorHandler sslErrorHandler, SslError sslError) {
             super.onReceivedSslError(webView, sslErrorHandler, sslError);
             sslErrorHandler.proceed();
         }
@@ -368,7 +368,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
     private final class Logginati implements Runnable {
         @Override
-        public void run() {
+        public synchronized void run() {
             runOnUiThread(() -> {
                 try {
                     staLoggandosi.set(true);
@@ -522,7 +522,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
         }
     }
 
-    private void SfogliaPagineOnline() {
+    private synchronized void SfogliaPagineOnline() {
         runOnUiThread(() -> {
             try {
                 if (cntPaginaProcessata.get() < totPagine) {
@@ -550,7 +550,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
     private final class FetchaListaGiochiOffline implements Runnable {
         @Override
-        public void run() {
+        public synchronized void run() {
             runOnUiThread(() -> {
                 staFetchandoListaGiochi.set(true);
 
@@ -586,7 +586,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
     private final class FetchaListaGiochiOnline implements Runnable {
         @Override
-        public void run() {
+        public synchronized void run() {
             runOnUiThread(() -> {
                 try {
                     staFetchandoListaGiochi.set(true);
@@ -697,7 +697,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
     private final class CheckaAcquistatoOffline implements Runnable {
         @Override
-        public void run() {
+        public synchronized void run() {
             runOnUiThread(() -> {
                 try {
                     staCheckandoAcquistato.set(true);
@@ -784,7 +784,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
     private final class CheckaAcquistato implements Runnable {
         @Override
-        public void run() {
+        public synchronized void run() {
             runOnUiThread(() -> {
                 try {
                     staCheckandoAcquistato.set(true);
