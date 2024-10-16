@@ -83,6 +83,8 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
     private AtomicBoolean staLoggandosi;
     private AtomicBoolean evitaLoginIndesiderate;
+    private AtomicBoolean emailScritta;
+    private AtomicBoolean passwordScritta;
 
     private AtomicBoolean staFetchandoListaGiochi;
     private AtomicBoolean evitaFetchIndesiderati;
@@ -131,7 +133,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
     private static final int WEB_VIEW_FETCH_LISTA_GIOCHI_ID = R.id.wv_fetchListaGiochi;
     private static final int WEB_VIEW_CHECK_ACQUISTATO_ID = R.id.wv_checkAcquistato;
 
-    private static final int TENTATIVI_LOGIN = 5;
+    private static final int TENTATIVI_LOGIN = 10;
     private static final int TENTATIVI_FETCH_LISTA_GIOCHI = 5;
     private static final int TENTATIVI_CHECK_ACQUISTATO = 5;
 
@@ -170,6 +172,8 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
         staLoggandosi = new AtomicBoolean(false);
         evitaLoginIndesiderate = new AtomicBoolean(false);
+        emailScritta = new AtomicBoolean(false);
+        passwordScritta = new AtomicBoolean(false);
 
         staFetchandoListaGiochi = new AtomicBoolean(false);
         evitaFetchIndesiderati = new AtomicBoolean(false);
@@ -304,10 +308,16 @@ public class PS4ScrapingActivity extends AppCompatActivity {
             try {
                 super.onPageFinished(webView, url);
                 if (webView.getId() == WEB_VIEW_LOGIN_ID && !staLoggandosi.get() && !evitaLoginIndesiderate.get()) {
+                    staLoggandosi.set(true);
+
                     logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_THREAD, TimeUnit.MILLISECONDS);
                 } else if (webView.getId() == WEB_VIEW_FETCH_LISTA_GIOCHI_ID && !staFetchandoListaGiochi.get() && !evitaFetchIndesiderati.get()) {
+                    staFetchandoListaGiochi.set(true);
+
                     fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_THREAD, TimeUnit.MILLISECONDS);
                 } else if (webView.getId() == WEB_VIEW_CHECK_ACQUISTATO_ID && !staCheckandoAcquistato.get() && !evitaCheckIndesiderati.get()) {
+                    staCheckandoAcquistato.set(true);
+
                     if (isRicercaOffline) {
                         checkaAcquistatoScheduledFuture = scheduledExecutorService.schedule(checkaAcquistatoOffline, INTERVALLO_THREAD, TimeUnit.MILLISECONDS);
                     }
@@ -346,7 +356,8 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                     !webResourceError.getDescription().equals("net::ERR_TIMED_OUT") &&
                             !webResourceError.getDescription().equals("net::ERR_SOCKET_NOT_CONNECTED") &&
                             !webResourceError.getDescription().equals("net::ERR_FAILED") &&
-                            !webResourceError.getDescription().equals("net::ERR_NAME_NOT_RESOLVED")
+                            !webResourceError.getDescription().equals("net::ERR_NAME_NOT_RESOLVED") &&
+                            !webResourceError.getDescription().equals("net::ERR_CONNECTION_RESET")
             ) {
                 showMessages(String.valueOf(webResourceError.getDescription()), true);
             }
@@ -371,30 +382,43 @@ public class PS4ScrapingActivity extends AppCompatActivity {
         public synchronized void run() {
             runOnUiThread(() -> {
                 try {
-                    staLoggandosi.set(true);
-
                     if (!isLoggato.get() && countDownLogin.getCount() > 0) {
                         String currentUrl = wv_login.getUrl();
 
                         if (currentUrl != null) {
                             if (currentUrl.contains(PLAYSTATION_ACCOUNT_URL)) {
                                 if (currentUrl.contains("#/signin/input/password")) {
+                                    evitaLoginIndesiderate.set(true);
+
                                     wv_login.evaluateJavascript(
                                             "document.getElementById('signin-password-input-password').value",
                                             password -> {
                                                 runOnUiThread(() -> {
                                                     try {
+                                                        evitaLoginIndesiderate.set(false);
+
                                                         updateProgress((int) countDownLogin.getCount() * 100 / TENTATIVI_LOGIN);
 
                                                         countDownLogin.countDown();
 
                                                         if (password.equals("null")) {
                                                             logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_TENTATIVO_LOGIN, TimeUnit.MILLISECONDS);
-                                                        } else {
+                                                        } else if (password.equals("\"Tenacious.1990!_\"")) {
+                                                            passwordScritta.set(true);
+
+                                                            countDownLogin = new CountDownLatch(0);
+
+                                                            logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, 0, TimeUnit.MILLISECONDS);
+                                                        }
+                                                        else {
+                                                            evitaLoginIndesiderate.set(true);
+
                                                             wv_login.evaluateJavascript("document.getElementById('signin-password-input-password').focus();", null);
                                                             wv_login.evaluateJavascript("setTimeout(function() { document.getElementById('signin-password-input-password').value = 'Tenacious.1990!_'; }, 100);", null);
 
-                                                            logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
+                                                            evitaLoginIndesiderate.set(false);
+
+                                                            logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_TENTATIVO_LOGIN, TimeUnit.MILLISECONDS); //submit
                                                         }
                                                     } catch (Exception e) {
                                                         showMessages(e.getMessage(), true);
@@ -404,22 +428,37 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                                             }
                                     );
                                 } else if (currentUrl.contains("sonyacct/signin") || currentUrl.contains("#/signin/input/id")) {
+                                    evitaLoginIndesiderate.set(true);
+
                                     wv_login.evaluateJavascript(
                                             "document.getElementById('signin-entrance-input-signinId').value",
                                             email -> {
                                                 runOnUiThread(() -> {
                                                     try {
+                                                        evitaLoginIndesiderate.set(false);
+
                                                         updateProgress((int) countDownLogin.getCount() * 100 / TENTATIVI_LOGIN);
 
                                                         countDownLogin.countDown();
 
                                                         if (email.equals("null")) {
                                                             logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_TENTATIVO_LOGIN, TimeUnit.MILLISECONDS);
-                                                        } else {
+                                                        } else if (email.equals("\"ferrari.90@hotmail.it_\"")) {
+                                                            emailScritta.set(true);
+
+                                                            countDownLogin = new CountDownLatch(0);
+
+                                                            logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, 0, TimeUnit.MILLISECONDS);
+                                                        }
+                                                        else {
+                                                            evitaLoginIndesiderate.set(true);
+
                                                             wv_login.evaluateJavascript("document.getElementById('signin-entrance-input-signinId').focus();", null);
                                                             wv_login.evaluateJavascript("document.getElementById('signin-entrance-input-signinId').value = 'ferrari.90@hotmail.it_';", null);
 
-                                                            logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
+                                                            evitaLoginIndesiderate.set(false);
+
+                                                            logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_TENTATIVO_LOGIN, TimeUnit.MILLISECONDS); //submit
                                                         }
                                                     } catch (Exception e) {
                                                         showMessages(e.getMessage(), true);
@@ -430,57 +469,28 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                                     );
                                 }
                             } else {
-//                                wv_login.evaluateJavascript(
-//                                        "document.querySelector('[data-qa=\"web-toolbar#profile-container\"]');",
-//                                        divLoggato -> {
-//                                            runOnUiThread(() -> {
-//                                                try {
-//                                                    updateProgress((int) countDownLogin.getCount() * 100 / TENTATIVI_LOGIN);
-//
-//                                                    isLoggato.set(!divLoggato.equals("null"));
-//
-//                                                    if (!isLoggato.get() && countDownLogin.getCount() > 0) {
-//                                                        countDownLogin.countDown();
-//                                                        logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_TENTATIVO_LOGIN, TimeUnit.MILLISECONDS);
-//                                                    } else {
-//                                                        countDownLogin = new CountDownLatch(0);
-//                                                        logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
-//                                                    }
-//                                                } catch (Exception e) {
-//                                                    showMessages(e.getMessage(), true);
-//                                                    throw new RuntimeException(e);
-//                                                }
-//                                            });
-//                                        }
-//                                );
+                                emailScritta.set(false);
+                                passwordScritta.set(false);
+
+                                evitaLoginIndesiderate.set(true);
 
                                 wv_login.evaluateJavascript(
-                                        "document.getElementById('__NEXT_DATA__').innerHTML",
-                                        nextData -> {
+                                        "document.querySelector('[data-qa=\"web-toolbar#profile-container\"]');",
+                                        divLoggato -> {
                                             runOnUiThread(() -> {
                                                 try {
+                                                    evitaLoginIndesiderate.set(false);
+
                                                     updateProgress((int) countDownLogin.getCount() * 100 / TENTATIVI_LOGIN);
 
-                                                    if (nextData.equals("null")) {
+                                                    isLoggato.set(!divLoggato.equals("null"));
+
+                                                    if (!isLoggato.get() && countDownLogin.getCount() > 0) {
                                                         countDownLogin.countDown();
                                                         logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_TENTATIVO_LOGIN, TimeUnit.MILLISECONDS);
-                                                    }
-                                                    else {
-                                                        boolean isLoggedIn = JsonParser.parseString(nextData).getAsJsonObject()
-                                                                .getAsJsonObject("props")
-                                                                .getAsJsonObject("pageProps")
-                                                                .get("isLoggedIn")
-                                                                .getAsBoolean();
-
-                                                        isLoggato.set(isLoggedIn);
-
-                                                        if (!isLoggato.get() && countDownLogin.getCount() > 0) {
-                                                            countDownLogin.countDown();
-                                                            logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_TENTATIVO_LOGIN, TimeUnit.MILLISECONDS);
-                                                        } else {
-                                                            countDownLogin = new CountDownLatch(0);
-                                                            logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
-                                                        }
+                                                    } else {
+                                                        countDownLogin = new CountDownLatch(0);
+                                                        logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, 0, TimeUnit.MILLISECONDS); //submit
                                                     }
                                                 } catch (Exception e) {
                                                     showMessages(e.getMessage(), true);
@@ -489,6 +499,44 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                                             });
                                         }
                                 );
+
+//                                wv_login.evaluateJavascript(
+//                                        "document.getElementById('__NEXT_DATA__').innerHTML",
+//                                        nextData -> {
+//                                            runOnUiThread(() -> {
+//                                                try {
+//                                                    evitaLoginIndesiderate.set(false);
+//
+//                                                    updateProgress((int) countDownLogin.getCount() * 100 / TENTATIVI_LOGIN);
+//
+//                                                    if (nextData.equals("null")) {
+//                                                        countDownLogin.countDown();
+//                                                        logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_TENTATIVO_LOGIN, TimeUnit.MILLISECONDS);
+//                                                    }
+//                                                    else {
+//                                                        boolean isLoggedIn = JsonParser.parseString(nextData).getAsJsonObject()
+//                                                                .getAsJsonObject("props")
+//                                                                .getAsJsonObject("pageProps")
+//                                                                .get("isLoggedIn")
+//                                                                .getAsBoolean();
+//
+//                                                        isLoggato.set(isLoggedIn);
+//
+//                                                        if (!isLoggato.get() && countDownLogin.getCount() > 0) {
+//                                                            countDownLogin.countDown();
+//                                                            logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, INTERVALLO_TENTATIVO_LOGIN, TimeUnit.MILLISECONDS);
+//                                                        } else {
+//                                                            countDownLogin = new CountDownLatch(0);
+//                                                            logginatiScheduledFuture = scheduledExecutorService.schedule(logginati, 0, TimeUnit.MILLISECONDS); //submit
+//                                                        }
+//                                                    }
+//                                                } catch (Exception e) {
+//                                                    showMessages(e.getMessage(), true);
+//                                                    throw new RuntimeException(e);
+//                                                }
+//                                            });
+//                                        }
+//                                );
                             }
                         }
                         else {
@@ -504,8 +552,6 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
                             //DistruggiWebView(wv_login);
                             wv_login.setVisibility(View.GONE);
-
-                            evitaLoginIndesiderate.set(true);
 
                             InizializzaListaGiochi();
                         } else {
@@ -552,8 +598,6 @@ public class PS4ScrapingActivity extends AppCompatActivity {
         @Override
         public synchronized void run() {
             runOnUiThread(() -> {
-                staFetchandoListaGiochi.set(true);
-
                 if (cntGiocoProcessato.get() < totGiochiDaControllare) {
                     giocoInFetching = listaGiochiDaFetchare.get(cntGiocoProcessato.get());
 
@@ -565,7 +609,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
                     if (!giocoInFetching.IsAcquistato) {
                         evitaCheckIndesiderati.set(false);
-                        //wv_checkAcquistato.loadUrl(giocoInFetching.UrlGioco);
+                        wv_checkAcquistato.loadUrl(giocoInFetching.UrlGioco);
                     }
                     else {
                         DisegnaOggetto();
@@ -589,16 +633,18 @@ public class PS4ScrapingActivity extends AppCompatActivity {
         public synchronized void run() {
             runOnUiThread(() -> {
                 try {
-                    staFetchandoListaGiochi.set(true);
-
                     if (giocoInFetching == null && countDownFetch.getCount() > 0) {
                         giocoInFetching = listaGiochiDaFetchare.get(cntGiocoProcessato.get());
+
+                        evitaFetchIndesiderati.set(true);
 
                         wv_fetchListaGiochi.evaluateJavascript(
                                 "document.querySelector(\"" + giocoInFetching.TxtDescrizioneSelector + "\").innerText",
                                 descrizione -> {
                                     runOnUiThread(() -> {
                                         try {
+                                            evitaFetchIndesiderati.set(false);
+
                                             if (descrizione.equals("null")) {
                                                 countDownFetch.countDown();
                                                 fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_TENTATIVO_FETCH_LISTA, TimeUnit.MILLISECONDS);
@@ -616,11 +662,15 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                                 }
                         );
                     } else if (giocoInFetching.Descrizione != null && giocoInFetching.Prezzo == null) {
+                        evitaFetchIndesiderati.set(true);
+
                         wv_fetchListaGiochi.evaluateJavascript(
                                 "document.querySelector(\"" + giocoInFetching.TxtPrezzoSelector + "\").innerText",
                                 prezzo -> {
                                     runOnUiThread(() -> {
                                         try {
+                                            evitaFetchIndesiderati.set(false);
+
                                             if (prezzo.equals("null") && countDownFetch.getCount() > 0) {
                                                 countDownFetch.countDown();
                                                 fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_TENTATIVO_FETCH_LISTA, TimeUnit.MILLISECONDS); //submit
@@ -672,7 +722,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
                         showMessage(String.format("Ricerca a pagina %1d...\n(Trovati %2d - Nuovi %3d)", giocoInFetching.PaginaRicerca, listaGiochiGratisTrovati.size(), listaGiochiGratisNonAcquistati.size()), false);
 
-                        evitaFetchIndesiderati.set(true);
+                                            evitaFetchIndesiderati.set(true);
 
                         if (giocoInFetching.Descrizione == null || giocoInFetching.ElementoPagina == (totGiochiPerPagina - 1)) {
                             giocoInFetching = null;
@@ -700,7 +750,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
         public synchronized void run() {
             runOnUiThread(() -> {
                 try {
-                    staCheckandoAcquistato.set(true);
+                    evitaCheckIndesiderati.set(true);
 
                     wv_checkAcquistato.evaluateJavascript(
                             "(function() {" +
@@ -733,6 +783,8 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                             prezzi -> {
                                 runOnUiThread(() -> {
                                     try {
+                                        evitaCheckIndesiderati.set(false);
+
                                         if (prezzi.equals("null") && countDownCheckAcquistato.getCount() > 0) {
                                             countDownCheckAcquistato.countDown();
                                             checkaAcquistatoScheduledFuture = scheduledExecutorService.schedule(checkaAcquistato, INTERVALLO_TENTATIVO_CHECK_ACQUISTATO, TimeUnit.MILLISECONDS);
@@ -754,9 +806,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                                             giocoInFetching.IsAcquistato = isAcquistato;
                                             giocoInFetching.IsGratis = isGratis;
 
-                                            if (giocoInFetching.IsAcquistato) {
-                                                listaGiochiGratisNonAcquistati.add(giocoInFetching);
-                                            }
+                                            if (giocoInFetching.IsAcquistato) listaGiochiGratisNonAcquistati.add(giocoInFetching);
 
                                             if (!giocoInFetching.IsDisegnato) DisegnaOggetto();
 
@@ -765,7 +815,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                                             evitaCheckIndesiderati.set(true);
 
                                             countDownCheckAcquistato = new CountDownLatch(0);
-                                            fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOffline, INTERVALLO_THREAD, TimeUnit.MILLISECONDS);
+                                            fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOffline, 0, TimeUnit.MILLISECONDS);
                                         }
                                     } catch (Exception e) {
                                         showMessages(e.getMessage(), true);
@@ -787,8 +837,6 @@ public class PS4ScrapingActivity extends AppCompatActivity {
         public synchronized void run() {
             runOnUiThread(() -> {
                 try {
-                    staCheckandoAcquistato.set(true);
-
                     if (giocoInFetching != null && (isRicercaOffline || !giocoInFetching.IsAcquistato)) {
                         wv_checkAcquistato.evaluateJavascript(
                                 "(function() {" +
@@ -824,7 +872,9 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                                                     listaGiochiGratisNonAcquistati.add(giocoInFetching);
                                                 }
 
-                                                if (!giocoInFetching.IsDisegnato) DisegnaOggetto();
+                                                if (!giocoInFetching.IsDisegnato) {
+                                                    DisegnaOggetto();
+                                                }
 
                                                 ResetCheckaAcquistato();
 
@@ -833,7 +883,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                                                 evitaCheckIndesiderati.set(true);
 
                                                 countDownCheckAcquistato = new CountDownLatch(0);
-                                                fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, INTERVALLO_THREAD, TimeUnit.MILLISECONDS); //submit
+                                                fetchaListaGiochiScheduledFuture = scheduledExecutorService.schedule(fetchaListaGiochiOnline, 0, TimeUnit.MILLISECONDS); //submit
                                             }
                                         } catch (Exception e) {
                                             showMessages(e.getMessage(), true);
@@ -855,19 +905,25 @@ public class PS4ScrapingActivity extends AppCompatActivity {
     private synchronized void ResetLogin() {
         staLoggandosi.set(false);
         countDownLogin = new CountDownLatch(TENTATIVI_LOGIN);
-        if (logginatiScheduledFuture != null) logginatiScheduledFuture.cancel(true);
+        if (logginatiScheduledFuture != null) {
+            logginatiScheduledFuture.cancel(true);
+        }
     }
 
     private synchronized void ResetFetchListaGiochi() {
         staFetchandoListaGiochi.set(false);
         countDownFetch = new CountDownLatch(TENTATIVI_FETCH_LISTA_GIOCHI);
-        if (fetchaListaGiochiScheduledFuture != null) fetchaListaGiochiScheduledFuture.cancel(true);
+        if (fetchaListaGiochiScheduledFuture != null) {
+            fetchaListaGiochiScheduledFuture.cancel(true);
+        }
     }
 
     private synchronized void ResetCheckaAcquistato() {
         staCheckandoAcquistato.set(false);
         countDownCheckAcquistato = new CountDownLatch(TENTATIVI_CHECK_ACQUISTATO);
-        if (checkaAcquistatoScheduledFuture != null) checkaAcquistatoScheduledFuture.cancel(true);
+        if (checkaAcquistatoScheduledFuture != null) {
+            checkaAcquistatoScheduledFuture.cancel(true);
+        }
     }
 
 
