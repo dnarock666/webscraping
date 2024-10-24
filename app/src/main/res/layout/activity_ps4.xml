@@ -10,46 +10,56 @@
     tools:context=".PS4ScrapingActivity">
 
     <ScrollView
-        android:id="@+id/scrollView"
+        android:id="@+id/sv_view"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:backgroundTint="@color/black"
+        android:fillViewport="true"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <LinearLayout
-            android:id="@+id/layout"
+        <RelativeLayout
+            android:id="@+id/rl_layout"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical"
             tools:ignore="ScrollViewSize">
 
-            <Space
-                android:layout_width="match_parent"
-                android:layout_height="20dp" />
-
             <TextView
                 android:id="@+id/lbl_playstation2"
                 android:layout_width="match_parent"
-                android:layout_height="27dp"
+                android:layout_height="27sp"
+                android:backgroundTint="#0094D9"
                 android:ems="10"
                 android:fontFamily="@font/playfair_display_sc_bold"
                 android:forceDarkAllowed="false"
-                android:text="@string/giochi_gratis_playstation"
+                android:text="@string/giochi_gratis_playstation_4"
                 android:textAlignment="center"
-                android:textColor="@color/white"
+                android:textColor="#546E7A"
                 android:textSize="17sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                tools:ignore="TextSizeCheck" />
 
             <Space
+                android:id="@+id/sp_bottomTitle"
                 android:layout_width="match_parent"
-                android:layout_height="20dp" />
+                android:layout_height="20dp"
+                android:layout_below="@id/lbl_playstation2"
+                android:backgroundTint="#0094D9" />
+
+            <ProgressBar
+                android:id="@+id/pb_progressBar"
+                style="@android:style/Widget.DeviceDefault.Light.ProgressBar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/sp_bottomTitle" />
 
             <TextView
                 android:id="@+id/txt_msg"
                 android:layout_width="330dp"
                 android:layout_height="wrap_content"
+                android:layout_below="@id/pb_progressBar"
                 android:layout_marginStart="50dp"
                 android:layout_marginEnd="50dp"
                 android:layout_marginBottom="0dp"
@@ -61,28 +71,95 @@
                 android:verticalScrollbarPosition="defaultPosition" />
 
             <Space
+                android:id="@+id/sp_bottomMsg"
                 android:layout_width="match_parent"
                 android:layout_height="20dp"
+                android:layout_below="@id/txt_msg"
                 android:layout_marginTop="0dp" />
 
-            <ProgressBar
-                android:id="@+id/progressBar"
-                style="@android:style/Widget.DeviceDefault.Light.ProgressBar"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fab_Top"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:layout_gravity="end|bottom"
+                android:layout_marginTop="525dp"
+                android:layout_marginRight="15dp"
+                android:clickable="true"
+                android:contentDescription="Top"
+                android:pointerIcon="hand"
+                android:rotation="90"
+                android:visibility="visible"
+                app:backgroundTint="#03A9F4"
+                app:srcCompat="@android:drawable/ic_media_previous"
+                tools:ignore="DuplicateClickableBoundsCheck,HardcodedText,ObsoleteLayoutParam,RelativeOverlap,RtlHardcoded,SpeakableTextPresentCheck,ImageContrastCheck" />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fab_Up"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:layout_gravity="end|bottom"
+                android:layout_marginTop="600dp"
+                android:layout_marginRight="15dp"
+                android:clickable="true"
+                android:contentDescription="Up"
+                android:pointerIcon="hand"
+                android:rotation="90"
+                android:visibility="visible"
+                app:backgroundTint="#03A9F4"
+                app:srcCompat="@android:drawable/ic_media_rew"
+                tools:ignore="DuplicateClickableBoundsCheck,HardcodedText,ObsoleteLayoutParam,RelativeOverlap,RtlHardcoded,SpeakableTextPresentCheck,ImageContrastCheck" />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fab_Down"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/fab_Up"
+                android:layout_alignParentTop="true"
+                android:layout_alignParentRight="true"
+                android:layout_gravity="end|bottom"
+                android:layout_marginTop="675dp"
+                android:layout_marginRight="15dp"
+                android:clickable="true"
+                android:contentDescription="Down"
+                android:pointerIcon="hand"
+                android:rotation="90"
+                android:visibility="visible"
+                app:backgroundTint="#03A9F4"
+                app:srcCompat="@android:drawable/ic_media_ff"
+                tools:ignore="DuplicateClickableBoundsCheck,HardcodedText,ObsoleteLayoutParam,RelativeOverlap,RtlHardcoded,SpeakableTextPresentCheck" />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fab_Bottom"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/fab_Up"
+                android:layout_alignParentTop="true"
+                android:layout_alignParentRight="true"
+                android:layout_gravity="end|bottom"
+                android:layout_marginTop="750dp"
+                android:layout_marginRight="15dp"
+                android:clickable="true"
+                android:contentDescription="Bottom"
+                android:pointerIcon="hand"
+                android:rotation="90"
+                android:visibility="visible"
+                app:backgroundTint="#03A9F4"
+                app:srcCompat="@android:drawable/ic_media_next"
+                tools:ignore="DuplicateClickableBoundsCheck,HardcodedText,ObsoleteLayoutParam,RelativeOverlap,RtlHardcoded,SpeakableTextPresentCheck" />
 
             <WebView
                 android:id="@+id/wv_login"
                 android:layout_width="match_parent"
-                android:layout_height="666dp"
-                android:layout_marginStart="1dp"
-                android:layout_marginTop="1dp"
-                android:layout_marginEnd="1dp"
+                android:layout_height="match_parent"
+                android:layout_below="@id/sp_bottomMsg"
+                android:layout_marginStart="0dp"
+                android:layout_marginTop="0dp"
+                android:layout_marginEnd="0dp"
+                android:backgroundTint="#000000"
                 android:scrollbars="vertical"
-                android:visibility="visible"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/scrollView">
+                android:visibility="visible">
 
             </WebView>
 
@@ -98,7 +175,7 @@
                 android:layout_height="match_parent"
                 android:visibility="gone" />
 
-        </LinearLayout>
+        </RelativeLayout>
     </ScrollView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

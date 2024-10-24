@@ -159,8 +159,8 @@ public class PS5ScrapingActivity extends AppCompatActivity {
 
         scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
 
-        ll_linearLayout = findViewById(R.id.layout);
-        pb_progressBar = findViewById(R.id.progressBar);
+        ll_linearLayout = findViewById(R.id.rl_layout);
+        pb_progressBar = findViewById(R.id.pb_progressBar);
         txt_msg = findViewById(R.id.txt_msg);
 
         gson = new Gson();

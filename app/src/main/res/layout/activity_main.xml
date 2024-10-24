@@ -10,7 +10,7 @@
     tools:context=".MainActivity">
 
     <ScrollView
-        android:id="@+id/scrollView"
+        android:id="@+id/sv_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:backgroundTint="@color/black"
@@ -19,7 +19,7 @@
         app:layout_constraintTop_toTopOf="parent">
 
         <LinearLayout
-            android:id="@+id/layout"
+            android:id="@+id/rl_layout"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical"
@@ -34,7 +34,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="27dp"
                 android:fontFamily="@font/playfair_display_sc_bold"
-                android:text="@string/giochi_gratis_playstation"
+                android:text="@string/giochi_gratis_playstation_4"
                 android:textAlignment="center"
                 android:textColor="#FFFFFF"
                 android:textSize="17sp"

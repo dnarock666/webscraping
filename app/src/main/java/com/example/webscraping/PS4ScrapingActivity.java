@@ -25,15 +25,15 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
+import android.widget.ScrollView;
 import android.widget.Space;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 
 import org.jsoup.Jsoup;
@@ -74,12 +74,17 @@ public class PS4ScrapingActivity extends AppCompatActivity {
     private Future<?> fetchaListaGiochiScheduledFuture;
     private Future<?> checkaAcquistatoScheduledFuture;
 
-    private LinearLayout ll_linearLayout;
+    private RelativeLayout rl_layout;
     private ProgressBar pb_progressBar;
     private TextView txt_msg;
     private WebView wv_login;
     private WebView wv_fetchListaGiochi;
     private WebView wv_checkAcquistato;
+    private FloatingActionButton fab_Top;
+    private FloatingActionButton fab_Up;
+    private FloatingActionButton fab_Down;
+    private FloatingActionButton fab_Bottom;
+    private ScrollView sv_view;
 
     private AtomicBoolean staLoggandosi;
     private AtomicBoolean evitaLoginIndesiderate;
@@ -107,6 +112,10 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
     private AtomicInteger cntPaginaProcessata;
     private AtomicInteger cntGiocoProcessato;
+
+    private final int scrollRange = 1024;
+    //private final int scrollResiduo = (int)(500 * getResources().getDisplayMetrics().density);
+    private int scrollAttuale;
 
     private Logginati logginati;
     private FetchaListaGiochiOnline fetchaListaGiochiOnline;
@@ -164,9 +173,14 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
         scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
 
-        ll_linearLayout = findViewById(R.id.layout);
-        pb_progressBar = findViewById(R.id.progressBar);
+        rl_layout = findViewById(R.id.rl_layout);
+        pb_progressBar = findViewById(R.id.pb_progressBar);
         txt_msg = findViewById(R.id.txt_msg);
+        fab_Top = findViewById(R.id.fab_Top);
+        fab_Up = findViewById(R.id.fab_Up);
+        fab_Down = findViewById(R.id.fab_Down);
+        fab_Bottom = findViewById(R.id.fab_Bottom);
+        sv_view = findViewById(R.id.sv_view);
 
         gson = new Gson();
 
@@ -185,6 +199,8 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
         cntPaginaProcessata = new AtomicInteger(0);
         cntGiocoProcessato = new AtomicInteger(0);
+
+        scrollAttuale = 0;
 
         System.setProperty("net.dns1", "8.8.8.8");
         System.setProperty("net.dns2", "8.8.4.4");
@@ -215,6 +231,47 @@ public class PS4ScrapingActivity extends AppCompatActivity {
         listaGiochiDaFetchare = new ArrayList<OggettoJson>();
         listaGiochiGratisTrovati = new ArrayList<OggettoJson>();
         listaGiochiGratisNonAcquistati = new ArrayList<OggettoJson>();
+
+        fab_Top.setOnClickListener(v -> {
+            wv_login.scrollTo(0, 0);
+            wv_login.post(() -> {
+                scrollAttuale = 0;
+            });
+        });
+        fab_Up.setOnClickListener(v -> {
+            scrollAttuale -= scrollRange;
+            if (0 <= scrollAttuale) {
+                wv_login.post(() -> {
+                    wv_login.scrollTo(0, scrollAttuale);
+                });
+            }
+            else {
+                scrollAttuale = 0;
+                wv_login.post(() -> {
+                    wv_login.scrollTo(0, scrollAttuale);
+                });
+            }
+        });
+        fab_Down.setOnClickListener(v -> {
+            scrollAttuale += scrollRange;
+            if((int) (wv_login.getContentHeight() * wv_login.getScaleY() - wv_login.getHeight()) >= scrollAttuale) {
+                wv_login.post(() -> {
+                    wv_login.scrollTo(0, scrollAttuale);
+                });
+            }
+            else {
+                scrollAttuale = (int) (wv_login.getContentHeight() * wv_login.getScaleY() - wv_login.getHeight());
+                wv_login.post(() -> {
+                    wv_login.scrollTo(0, scrollAttuale);
+                });
+            }
+        });
+        fab_Bottom.setOnClickListener(v -> {
+            wv_login.scrollTo(0, wv_login.getContentHeight());;
+            wv_login.post(() -> {
+                scrollAttuale = wv_login.getScrollY();
+            });
+        });
 
         wv_login.loadUrl(PLAYSTATION_MAP_URL);
     }
@@ -283,12 +340,12 @@ public class PS4ScrapingActivity extends AppCompatActivity {
         webSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
 //        webSettings.setUserAgentString(WebSettings.getDefaultUserAgent(PS4ScrapingActivity.this));
         webSettings.setJavaScriptEnabled(true);
-//        webSettings.setDomStorageEnabled(true);
+        webSettings.setDomStorageEnabled(true);
 //        webSettings.setAllowContentAccess(true);
 //        webSettings.setAllowFileAccess(true);
 //        webSettings.setBlockNetworkImage(false);
 //        webSettings.setSafeBrowsingEnabled(false);
-//        webSettings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        webSettings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
 
         CookieManager cookieManager = CookieManager.getInstance();
         cookieManager.setAcceptThirdPartyCookies(webView, true);
@@ -700,7 +757,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
                         ResetFetchListaGiochi();
 
-                        showMessage(String.format("Ricerca a pagina %1d...\n(Trovati %2d - Nuovi %3d)", giocoInFetching.PaginaRicerca, listaGiochiGratisTrovati.size(), listaGiochiGratisNonAcquistati.size()), false);
+                        showMessage(String.format("Ricerca a pagina %1d di %2...\n(Trovati %3d - Nuovi %4d)", giocoInFetching.PaginaRicerca, totPagine, listaGiochiGratisTrovati.size(), listaGiochiGratisNonAcquistati.size()), false);
 
                         evitaFetchIndesiderati.set(true);
 
@@ -984,7 +1041,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                 txtTitoloGioco.setGravity(Gravity.CENTER);
                 txtTitoloGioco.setTextColor(Color.rgb(255, 255, 255));
                 txtTitoloGioco.setText(String.format("%1$s (%2$s)", giocoInFetching.Descrizione, giocoInFetching.Prezzo));
-                ll_linearLayout.addView(txtTitoloGioco);
+                rl_layout.addView(txtTitoloGioco);
 
                 Button bottoneGioco = new Button(PS4ScrapingActivity.this);
                 RelativeLayout.LayoutParams bottoneGiocoRelativeLayoutParams =
@@ -1009,7 +1066,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                     bottoneGioco.setBackgroundColor(Color.rgb(69, 255, 255));
                 }
                 bottoneGioco.setPadding(30, 0, 30,0);
-                ll_linearLayout.addView(bottoneGioco);
+                rl_layout.addView(bottoneGioco);
 
                 if(giocoInFetching.SrcAnteprima != null) {
                     InputStream inputStreamAnteprimaGioco = new URL(giocoInFetching.SrcAnteprima.replace("54&thumb=true", String.valueOf(256))).openStream();
@@ -1025,7 +1082,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                     imageView.setOnClickListener(v -> {
                         startActivity(new Intent(Intent.ACTION_VIEW).setData(Uri.parse(bottoneUrlGioco)));
                     });
-                    ll_linearLayout.addView(imageView);
+                    rl_layout.addView(imageView);
                 }
                 else {
                     boolean chiappa = true;
@@ -1038,7 +1095,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                                 30
                         )
                 );
-                ll_linearLayout.addView(spazio2);
+                rl_layout.addView(spazio2);
 
                 RelativeLayout.LayoutParams txtTimeStampRelativeLayoutParams =
                         new RelativeLayout.LayoutParams(
@@ -1056,7 +1113,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                 txtTimestamp.setText(formattedDate);
                 txtTimestamp.setTextSize(10);
                 txtTimestamp.setTextColor(Color.YELLOW);
-                ll_linearLayout.addView(txtTimestamp);
+                rl_layout.addView(txtTimestamp);
 
                 Space spazio3 = new Space(PS4ScrapingActivity.this);
                 spazio3.setLayoutParams(
@@ -1065,7 +1122,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                                 30
                         )
                 );
-                ll_linearLayout.addView(spazio3);
+                rl_layout.addView(spazio3);
 
                 giocoInFetching.IsDisegnato = true;
             } catch (Exception e) {
@@ -1077,7 +1134,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
     }
 
     private synchronized void DistruggiWebView(WebView webView) {
-        ll_linearLayout.removeView(webView);
+        rl_layout.removeView(webView);
         //ClearWebView(webView, false);
         webView.destroy();
         webView = null;
