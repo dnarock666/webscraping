@@ -113,9 +113,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
     private AtomicInteger cntPaginaProcessata;
     private AtomicInteger cntGiocoProcessato;
 
-    private final int scrollRange = 1024;
-    //private final int scrollResiduo = (int)(500 * getResources().getDisplayMetrics().density);
-    private int scrollAttuale;
+    private AtomicBoolean staScorrendo;
 
     private Logginati logginati;
     private FetchaListaGiochiOnline fetchaListaGiochiOnline;
@@ -200,7 +198,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
         cntPaginaProcessata = new AtomicInteger(0);
         cntGiocoProcessato = new AtomicInteger(0);
 
-        scrollAttuale = 0;
+        staScorrendo = new AtomicBoolean(false);
 
         System.setProperty("net.dns1", "8.8.8.8");
         System.setProperty("net.dns2", "8.8.4.4");
@@ -233,44 +231,40 @@ public class PS4ScrapingActivity extends AppCompatActivity {
         listaGiochiGratisNonAcquistati = new ArrayList<OggettoJson>();
 
         fab_Top.setOnClickListener(v -> {
-            wv_login.scrollTo(0, 0);
-            wv_login.post(() -> {
-                scrollAttuale = 0;
-            });
+            if (!staScorrendo.get()) {
+                staScorrendo.set(true);
+                wv_login.pageUp(true);
+                wv_login.postDelayed(() -> {
+                    staScorrendo.set(false);
+                }, 500);
+            }
         });
         fab_Up.setOnClickListener(v -> {
-            scrollAttuale -= scrollRange;
-            if (0 <= scrollAttuale) {
-                wv_login.post(() -> {
-                    wv_login.scrollTo(0, scrollAttuale);
-                });
-            }
-            else {
-                scrollAttuale = 0;
-                wv_login.post(() -> {
-                    wv_login.scrollTo(0, scrollAttuale);
-                });
+            if (!staScorrendo.get()) {
+                staScorrendo.set(true);
+                wv_login.pageUp(false);
+                wv_login.postDelayed(() -> {
+                    staScorrendo.set(false);
+                }, 500);
             }
         });
         fab_Down.setOnClickListener(v -> {
-            scrollAttuale += scrollRange;
-            if((int) (wv_login.getContentHeight() * wv_login.getScaleY() - wv_login.getHeight()) >= scrollAttuale) {
-                wv_login.post(() -> {
-                    wv_login.scrollTo(0, scrollAttuale);
-                });
-            }
-            else {
-                scrollAttuale = (int) (wv_login.getContentHeight() * wv_login.getScaleY() - wv_login.getHeight());
-                wv_login.post(() -> {
-                    wv_login.scrollTo(0, scrollAttuale);
-                });
+            if (!staScorrendo.get()) {
+                staScorrendo.set(true);
+                wv_login.pageDown(false);
+                wv_login.postDelayed(() -> {
+                    staScorrendo.set(false);
+                }, 500);
             }
         });
         fab_Bottom.setOnClickListener(v -> {
-            wv_login.scrollTo(0, wv_login.getContentHeight());;
-            wv_login.post(() -> {
-                scrollAttuale = wv_login.getScrollY();
-            });
+            if (!staScorrendo.get()) {
+                staScorrendo.set(true);
+                wv_login.pageDown(true);
+                wv_login.postDelayed(() -> {
+                    staScorrendo.set(false);
+                }, 500);
+            }
         });
 
         wv_login.loadUrl(PLAYSTATION_MAP_URL);
@@ -337,7 +331,7 @@ public class PS4ScrapingActivity extends AppCompatActivity {
         webView.setWebViewClient(new WebViewClientComune());
 
         WebSettings webSettings = webView.getSettings();
-        webSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
+        webSettings.setCacheMode(WebSettings.LOAD_NO_CACHE);
 //        webSettings.setUserAgentString(WebSettings.getDefaultUserAgent(PS4ScrapingActivity.this));
         webSettings.setJavaScriptEnabled(true);
         webSettings.setDomStorageEnabled(true);
@@ -414,7 +408,8 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                             !webResourceError.getDescription().equals("net::ERR_SOCKET_NOT_CONNECTED") &&
                             !webResourceError.getDescription().equals("net::ERR_FAILED") &&
                             !webResourceError.getDescription().equals("net::ERR_NAME_NOT_RESOLVED") &&
-                            !webResourceError.getDescription().equals("net::ERR_CONNECTION_RESET")
+                            !webResourceError.getDescription().equals("net::ERR_CONNECTION_RESET") &&
+                            !webResourceError.getDescription().equals("net::ERR_CONNECTION_CLOSED")
             ) {
                 showMessages(String.valueOf(webResourceError.getDescription()), true);
             }
