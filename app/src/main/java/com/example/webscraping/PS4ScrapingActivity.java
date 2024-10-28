@@ -439,6 +439,14 @@ public class PS4ScrapingActivity extends AppCompatActivity {
 
                         if (currentUrl != null) {
                             if (currentUrl.contains(PLAYSTATION_ACCOUNT_URL)) {
+
+                                ViewGroup.LayoutParams loginLayoutParams = wv_login.getLayoutParams();
+                                if (loginLayoutParams.height != 2048) {
+                                    loginLayoutParams.height = 2048;
+                                    wv_login.setLayoutParams(loginLayoutParams);
+                                    wv_login.requestLayout();
+                                }
+
                                 if (currentUrl.contains("#/signin/input/password")) {
                                     evitaLoginIndesiderate.set(true);
 
@@ -525,6 +533,13 @@ public class PS4ScrapingActivity extends AppCompatActivity {
                                 passwordScritta.set(false);
 
                                 evitaLoginIndesiderate.set(true);
+
+                                ViewGroup.LayoutParams loginLayoutParams = wv_login.getLayoutParams();
+                                if (loginLayoutParams.height > -1) {
+                                    loginLayoutParams.height = -1;
+                                    wv_login.setLayoutParams(loginLayoutParams);
+                                    wv_login.requestLayout();
+                                }
 
                                 wv_login.evaluateJavascript(
                                         "document.querySelector('[data-qa=\"web-toolbar#profile-container\"]');",
