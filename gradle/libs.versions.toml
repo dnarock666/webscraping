@@ -1,5 +1,5 @@
 [versions]
-agpVersion = "8.5.0"
+agpVersion = "8.6.0"
 junitVersion = "4.13.2"
 extJunitVersion = "1.1.5"
 espressoCoreVersion = "3.5.1"
